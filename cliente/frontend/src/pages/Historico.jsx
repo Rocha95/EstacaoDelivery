@@ -1,0 +1,154 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import BottomNav from '../components/BottomNav'
+import { buscarPedidos } from '../services/api'
+
+export default function Historico() {
+  const navigate = useNavigate()
+
+  const [pedidos, setPedidos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    async function carregarHistorico() {
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await buscarPedidos()
+        setPedidos(Array.isArray(data) ? data : [])
+      } catch (err) {
+        console.error('Erro ao buscar pedidos:', err)
+        setError('Não foi possível carregar seu histórico de pedidos.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    carregarHistorico()
+  }, [])
+
+  // Helper para formatar lista de itens
+  const formatarItens = (itens) => {
+    if (!itens || !Array.isArray(itens) || itens.length === 0) {
+      return 'Nenhum item informado'
+    }
+
+    return itens
+      .map((item) => {
+        if (typeof item === 'string') return item
+        const qtd = item.quantidade || item.qtd || 1
+        const nome = item.nome || item.produto?.nome || 'Produto'
+        return `${qtd}x ${nome}`
+      })
+      .join(', ')
+  }
+
+  // Helper para formatar data (suporta ISO UTC string ou YYYY-MM-DD)
+  const formatarData = (dataRaw) => {
+    if (!dataRaw) return ''
+    try {
+      const dataObj = new Date(dataRaw)
+      if (!isNaN(dataObj.getTime())) {
+        return dataObj.toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      }
+      // Fallback para datas simples YYYY-MM-DD
+      return String(dataRaw).split('T')[0].split('-').reverse().join('/')
+    } catch {
+      return String(dataRaw)
+    }
+  }
+
+  // Helper para rotular e formatar status dos pedidos
+  const formatarStatus = (status) => {
+    if (!status) return 'Realizado'
+    const statusLower = String(status).toLowerCase()
+
+    const mapaStatus = {
+      entregue: 'Entregue',
+      concluido: 'Concluído',
+      cancelado: 'Cancelado',
+      preparando: 'Em preparo',
+      em_rota: 'Saiu para entrega',
+      pendente: 'Aguardando confirmação',
+      aceito: 'Confirmado'
+    }
+
+    return mapaStatus[statusLower] || status
+  }
+
+  return (
+    <div className="app-frame">
+      <div className="top-nav-back" style={{ padding: '18px 18px 4px' }}>
+        <h1>Seus pedidos</h1>
+      </div>
+
+      <div className="content">
+        {/* Loading State */}
+        {loading && (
+          <div className="empty-state" style={{ paddingTop: 40 }}>
+            Carregando pedidos...
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="empty-state" style={{ paddingTop: 40, color: '#d32f2f' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && pedidos.length === 0 && (
+          <div className="empty-state" style={{ paddingTop: 40 }}>
+            Você ainda não realizou nenhum pedido.
+          </div>
+        )}
+
+        {/* Lista de Pedidos */}
+        {!loading &&
+          !error &&
+          pedidos.map((p) => {
+            const idPedido = p.id || p._id
+            const total = Number(p.total || p.valorTotal || 0)
+            const dataFormatada = formatarData(p.data || p.createdAt || p.criadoEm)
+            const statusTexto = formatarStatus(p.status)
+
+            return (
+              <div
+                key={idPedido}
+                className="card"
+                style={{ marginBottom: 12, cursor: 'pointer' }}
+                onClick={() => navigate(`/pedido/${idPedido}`)}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span className="order-id" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                    #{String(idPedido).slice(-6)}
+                  </span>
+                  <span className="money" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                    R$ {total.toFixed(2)}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: 12.5, color: '#6B675F', marginBottom: 4 }}>
+                  {formatarItens(p.itens || p.produtos)}
+                </div>
+
+                <div style={{ fontSize: 11.5, color: '#8A867C' }}>
+                  {dataFormatada} {statusTexto ? `· ${statusTexto}` : ''}
+                </div>
+              </div>
+            )
+          })}
+      </div>
+
+      <BottomNav />
+    </div>
+  )
+}

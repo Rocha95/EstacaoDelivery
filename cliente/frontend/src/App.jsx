@@ -1,0 +1,37 @@
+import { Routes, Route } from 'react-router-dom'
+import { CartProvider } from './context/CartContext'
+import { AuthProvider } from './context/AuthContext'
+
+import Home from './pages/Home'
+import ProductDetail from './pages/ProductDetail'
+import Cart from './pages/Cart'
+import Login from './pages/Login'
+import CheckoutEntrega from './pages/CheckoutEntrega'
+import CheckoutPagamento from './pages/CheckoutPagamento'
+import CheckoutConfirmacao from './pages/CheckoutConfirmacao'
+import Acompanhamento from './pages/Acompanhamento'
+import Historico from './pages/Historico'
+import Perfil from './pages/Perfil'
+import Enderecos from './pages/Enderecos'
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/produto/:id" element={<ProductDetail />} />
+          <Route path="/carrinho" element={<Cart />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/checkout/entrega" element={<CheckoutEntrega />} />
+          <Route path="/checkout/pagamento" element={<CheckoutPagamento />} />
+          <Route path="/checkout/confirmacao" element={<CheckoutConfirmacao />} />
+          <Route path="/pedido/:id" element={<Acompanhamento />} />
+          <Route path="/historico" element={<Historico />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/enderecos" element={<Enderecos />} />
+        </Routes>
+      </CartProvider>
+    </AuthProvider>
+  )
+}

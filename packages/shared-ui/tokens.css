@@ -1,0 +1,29 @@
+/*
+ * Design tokens compartilhados entre o painel do estabelecimento e o app
+ * do cliente. Cores e tipografia da marca ficam aqui; espaçamento, raio de
+ * borda e sombra ficam no index.css de cada app, porque cada um tem uma
+ * linguagem visual própria (painel = dashboard denso, cliente = app mobile).
+ */
+:root {
+  --ink: #1C1B1A;
+  --ink-soft: #2A2826;
+  --paper: #F7F5F0;
+  --paper-raised: #FFFFFF;
+  --line: #E4DFD3;
+  --line-soft: #EDE9DD;
+  --graphite: #4A4744;
+  --graphite-strong: #201F1D;
+
+  --chili: #C4432B;
+  --chili-dark: #A6371F;
+  --chili-soft: #F6DAD3;
+  --mustard: #C98A1C;
+  --mustard-soft: #F4E3C0;
+  --basil: #3F6B45;
+  --basil-soft: #DCE8DC;
+  --sky: #2E6E8E;
+  --sky-soft: #DCEAF0;
+
+  --font-ui: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', monospace;
+}

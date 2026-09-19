@@ -1,0 +1,19 @@
+{
+  "name": "sistema-delivery",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "painel/*",
+    "cliente/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:painel:frontend": "npm run dev --workspace painel/frontend",
+    "dev:painel:backend": "npm run dev --workspace painel/backend",
+    "dev:cliente:frontend": "npm run dev --workspace cliente/frontend",
+    "dev:cliente:backend": "npm run dev --workspace cliente/backend",
+    "db:migrate": "npm run prisma:migrate --workspace packages/database",
+    "db:seed": "npm run seed --workspace packages/database",
+    "db:studio": "npm run prisma:studio --workspace packages/database"
+  }
+}

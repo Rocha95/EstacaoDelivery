@@ -1,0 +1,315 @@
+// Schema unificado do sistema de pedidos e delivery.
+// Um banco só, consumido pelos dois apps (painel e cliente).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Usuários (cliente ou equipe do estabelecimento)
+// ---------------------------------------------------------------------------
+
+enum TipoUsuario {
+  CLIENTE
+  EQUIPE
+}
+
+enum PapelEquipe {
+  ADMINISTRADOR
+  GERENTE
+  COZINHA
+  ATENDIMENTO
+}
+
+model Usuario {
+  id        String       @id @default(uuid())
+  nome      String
+  email     String?      @unique
+  telefone  String?      @unique
+  senhaHash String
+  tipo      TipoUsuario
+  papel     PapelEquipe? // só preenchido quando tipo = EQUIPE
+  ativo     Boolean      @default(true)
+  criadoEm  DateTime     @default(now())
+
+  enderecos Endereco[]
+  pedidos   Pedido[]
+
+  @@map("usuarios")
+}
+
+model Endereco {
+  id          String  @id @default(uuid())
+  usuario     Usuario @relation(fields: [usuarioId], references: [id])
+  usuarioId   String
+  apelido     String?
+  rua         String
+  numero      String?
+  complemento String?
+  bairro      String
+  cidade      String
+  estado      String
+  cep         String?
+  latitude    Float?
+  longitude   Float?
+  distanciaKm Float? // calculado a partir do endereço do estabelecimento (Configuracao)
+
+  pedidos  Pedido[]
+  criadoEm DateTime @default(now())
+
+  @@map("enderecos")
+}
+
+// ---------------------------------------------------------------------------
+// Cardápio: categorias, produtos, adicionais, combos
+// ---------------------------------------------------------------------------
+
+model Categoria {
+  id    String  @id @default(uuid())
+  nome  String
+  ordem Int     @default(0)
+  ativa Boolean @default(true)
+
+  produtos Produto[]
+
+  @@map("categorias")
+}
+
+model Produto {
+  id                    String   @id @default(uuid())
+  nome                  String
+  descricao             String?
+  preco                 Decimal  @db.Decimal(10, 2)
+  emoji                 String?
+  imagemUrl             String?
+  ativo                 Boolean  @default(true)
+  // Janela própria de disponibilidade (ex: só no almoço). Nula = segue o
+  // horário geral de funcionamento (HorarioFuncionamento).
+  disponibilidadeInicio String? // formato "HH:MM"
+  disponibilidadeFim    String?
+
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  categoriaId String
+
+  gruposAdicionais ProdutoGrupoAdicional[]
+  itensPedido      ItemPedido[]
+  combosItens      ComboItem[]
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@map("produtos")
+}
+
+// Um grupo de adicionais (ex: "Adicionais de lanche", com limite de seleção)
+// pode ser reaproveitado por vários produtos — por isso a tabela de junção.
+model GrupoAdicional {
+  id            String  @id @default(uuid())
+  nome          String
+  maximoSelecao Int     @default(1)
+  obrigatorio   Boolean @default(false)
+
+  opcoes   OpcaoAdicional[]
+  produtos ProdutoGrupoAdicional[]
+
+  @@map("grupos_adicionais")
+}
+
+model OpcaoAdicional {
+  id    String  @id @default(uuid())
+  nome  String
+  preco Decimal @db.Decimal(10, 2) @default(0)
+  ativo Boolean @default(true)
+
+  grupo   GrupoAdicional @relation(fields: [grupoId], references: [id])
+  grupoId String
+
+  itensSelecionados ItemPedidoAdicional[]
+
+  @@map("opcoes_adicionais")
+}
+
+model ProdutoGrupoAdicional {
+  produto   Produto        @relation(fields: [produtoId], references: [id])
+  produtoId String
+  grupo     GrupoAdicional @relation(fields: [grupoId], references: [id])
+  grupoId   String
+
+  @@id([produtoId, grupoId])
+  @@map("produto_grupo_adicional")
+}
+
+model Combo {
+  id    String  @id @default(uuid())
+  nome  String
+  preco Decimal @db.Decimal(10, 2)
+  ativo Boolean @default(true)
+
+  itens       ComboItem[]
+  itensPedido ItemPedido[]
+
+  @@map("combos")
+}
+
+model ComboItem {
+  combo      Combo   @relation(fields: [comboId], references: [id])
+  comboId    String
+  produto    Produto @relation(fields: [produtoId], references: [id])
+  produtoId  String
+  quantidade Int     @default(1)
+
+  @@id([comboId, produtoId])
+  @@map("combo_itens")
+}
+
+// ---------------------------------------------------------------------------
+// Operação: horários, cupons, taxas de entrega, configuração geral
+// ---------------------------------------------------------------------------
+
+model HorarioFuncionamento {
+  id        String  @id @default(uuid())
+  diaSemana Int // 0 = domingo ... 6 = sábado
+  ativo     Boolean @default(true)
+  abre      String // "HH:MM"
+  fecha     String // "HH:MM"
+
+  @@unique([diaSemana])
+  @@map("horarios_funcionamento")
+}
+
+enum TipoCupom {
+  PERCENTUAL
+  VALOR_FIXO
+  FRETE_GRATIS
+}
+
+model Cupom {
+  id           String    @id @default(uuid())
+  codigo       String    @unique
+  tipo         TipoCupom
+  valor        Decimal   @db.Decimal(10, 2) @default(0) // ignorado se FRETE_GRATIS
+  pedidoMinimo Decimal   @db.Decimal(10, 2) @default(0)
+  validoAte    DateTime?
+  ativo        Boolean   @default(true)
+  criadoEm     DateTime  @default(now())
+
+  pedidos Pedido[]
+
+  @@map("cupons")
+}
+
+// Faixas de distância → valor da taxa de entrega, calculadas a partir do
+// endereço do estabelecimento (Configuracao.endereco / latitude / longitude).
+model FaixaTaxaEntrega {
+  id    String  @id @default(uuid())
+  ateKm Float // limite superior da faixa; a última faixa cobre "acima de"
+  valor Decimal @db.Decimal(10, 2)
+  ordem Int     @default(0)
+
+  @@map("faixas_taxa_entrega")
+}
+
+model Configuracao {
+  id                   String  @id @default("default")
+  nomeEstabelecimento  String
+  telefone             String?
+  endereco             String
+  latitude             Float?
+  longitude            Float?
+  pedidoMinimo         Decimal @db.Decimal(10, 2) @default(0)
+  tempoPreparoMedioMin Int     @default(30)
+  raioMaximoEntregaKm  Float   @default(12)
+  aceitaDelivery       Boolean @default(true)
+  aceitaRetirada       Boolean @default(true)
+
+  @@map("configuracoes")
+}
+
+// ---------------------------------------------------------------------------
+// Pedidos
+// ---------------------------------------------------------------------------
+
+enum TipoEntrega {
+  DELIVERY
+  RETIRADA
+}
+
+enum FormaPagamento {
+  PIX
+  DINHEIRO_ENTREGA
+  CARTAO_ENTREGA
+}
+
+enum StatusPedido {
+  RECEBIDO
+  EM_PRODUCAO
+  SAIU_PARA_ENTREGA
+  FINALIZADO
+  CANCELADO
+}
+
+model Pedido {
+  id             String         @id @default(uuid())
+  numero         Int            @unique @default(autoincrement())
+  cliente        Usuario        @relation(fields: [clienteId], references: [id])
+  clienteId      String
+  tipoEntrega    TipoEntrega
+  endereco       Endereco?      @relation(fields: [enderecoId], references: [id])
+  enderecoId     String?
+  formaPagamento FormaPagamento
+  status         StatusPedido   @default(RECEBIDO)
+
+  subtotal    Decimal @db.Decimal(10, 2)
+  taxaEntrega Decimal @db.Decimal(10, 2) @default(0)
+  desconto    Decimal @db.Decimal(10, 2) @default(0)
+  total       Decimal @db.Decimal(10, 2)
+
+  cupom       Cupom?  @relation(fields: [cupomId], references: [id])
+  cupomId     String?
+  observacoes String?
+
+  itens ItemPedido[]
+
+  criadoEm      DateTime  @default(now())
+  producaoEm    DateTime?
+  saiuEntregaEm DateTime?
+  finalizadoEm  DateTime?
+
+  @@map("pedidos")
+}
+
+// Um item pode vir de um produto avulso OU de um combo — nunca os dois.
+model ItemPedido {
+  id            String  @id @default(uuid())
+  pedido        Pedido  @relation(fields: [pedidoId], references: [id])
+  pedidoId      String
+  produto       Produto? @relation(fields: [produtoId], references: [id])
+  produtoId     String?
+  combo         Combo?   @relation(fields: [comboId], references: [id])
+  comboId       String?
+  // snapshot: preserva nome/preço mesmo se o produto mudar depois
+  nome          String
+  precoUnitario Decimal @db.Decimal(10, 2)
+  quantidade    Int     @default(1)
+
+  adicionais ItemPedidoAdicional[]
+
+  @@map("itens_pedido")
+}
+
+model ItemPedidoAdicional {
+  id       String         @id @default(uuid())
+  item     ItemPedido     @relation(fields: [itemId], references: [id])
+  itemId   String
+  opcao    OpcaoAdicional @relation(fields: [opcaoId], references: [id])
+  opcaoId  String
+  nome     String // snapshot
+  preco    Decimal        @db.Decimal(10, 2)
+
+  @@map("itens_pedido_adicionais")
+}
