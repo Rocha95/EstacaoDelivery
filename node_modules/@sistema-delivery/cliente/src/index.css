@@ -1,0 +1,392 @@
+/* Cores e tipografia da marca vêm do pacote compartilhado */
+@import '../../../packages/shared-ui/tokens.css';
+
+:root {
+  /* Só o que é específico da linguagem visual do app do cliente (mobile) */
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 20px;
+  --shadow-card: 0 1px 2px rgba(28,27,26,0.06), 0 6px 16px rgba(28,27,26,0.05);
+  --max-app: 480px;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--line-soft);
+  color: var(--graphite);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* App em "moldura" de app mobile, centralizado em telas largas */
+.app-frame {
+  max-width: var(--max-app);
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 0 40px rgba(0,0,0,0.06);
+}
+
+/* ---------- Header ---------- */
+.store-header {
+  background: var(--ink);
+  color: #F4F1E9;
+  padding: 18px 18px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.store-header .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.store-header .mark { font-family: var(--font-mono); color: var(--chili); font-weight: 700; }
+.store-header .store-name { font-size: 17px; font-weight: 800; margin-top: 2px; }
+.store-header .store-meta { font-size: 11.5px; color: #B7B2A6; margin-top: 3px; }
+
+.header-pill {
+  padding: 5px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header-pill.open { background: rgba(63,107,69,0.25); color: #A9D4AE; }
+.header-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: #F4F1E9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  position: relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -3px; right: -3px;
+  background: var(--chili);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 50%;
+  width: 17px; height: 17px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ---------- Categorias ---------- */
+.category-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 18px 4px;
+  overflow-x: auto;
+}
+
+.category-pill {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  color: var(--graphite);
+}
+
+.category-pill.active {
+  background: var(--chili);
+  border-color: var(--chili);
+  color: white;
+}
+
+/* ---------- Conteúdo ---------- */
+.content {
+  padding: 14px 18px 100px;
+  flex: 1;
+}
+
+.content.no-pad-bottom { padding-bottom: 24px; }
+
+.section-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--graphite-strong);
+  margin: 18px 0 10px;
+}
+
+/* ---------- Produtos ---------- */
+.product-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.product-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+}
+
+.product-thumb {
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  background: var(--mustard-soft);
+}
+
+.product-info { padding: 10px 12px 12px; }
+.product-info .name { font-size: 12.5px; font-weight: 700; line-height: 1.3; min-height: 32px; }
+.product-info .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.product-info .price { font-family: var(--font-mono); font-weight: 700; font-size: 13.5px; }
+
+.add-btn {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--chili);
+  color: white;
+  border: none;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.product-card.disabled { opacity: 0.5; }
+.product-card.disabled .add-btn { background: var(--line); color: #8A867C; }
+
+/* ---------- Lista de itens (carrinho / detalhe) ---------- */
+.list-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.list-row:last-child { border-bottom: none; }
+
+.list-thumb {
+  width: 52px; height: 52px;
+  border-radius: 10px;
+  background: var(--mustard-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.qty-control {
+  display: flex; align-items: center; gap: 8px;
+}
+.qty-control button {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  font-weight: 800;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ---------- Bottom bar (carrinho flutuante) ---------- */
+.bottom-cart-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(247,245,240,0) 0%, var(--paper) 30%);
+}
+
+.bottom-cart-bar .inner {
+  background: var(--ink);
+  color: white;
+  border-radius: 100px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 13.5px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.bottom-cart-bar .inner .count {
+  background: var(--chili);
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ---------- Botões e cards genéricos ---------- */
+.btn-block {
+  width: 100%;
+  padding: 14px;
+  border-radius: 100px;
+  border: none;
+  font-weight: 800;
+  font-size: 14px;
+}
+.btn-primary { background: var(--chili); color: white; }
+.btn-primary:disabled { background: var(--line); color: #8A867C; }
+.btn-outline { background: var(--paper-raised); border: 1px solid var(--line); color: var(--graphite); }
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 14px;
+}
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  font-size: 13.5px;
+  background: var(--paper-raised);
+}
+.field input:focus { outline: 2px solid var(--chili); outline-offset: 1px; border-color: var(--chili); }
+
+.option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.option-row.selected { border-color: var(--chili); background: var(--chili-soft); }
+.option-row .title { font-weight: 700; font-size: 13.5px; }
+.option-row .subtitle { font-size: 11.5px; color: #8A867C; margin-top: 2px; }
+
+.radio-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  flex-shrink: 0;
+  position: relative;
+}
+.option-row.selected .radio-dot { border-color: var(--chili); }
+.option-row.selected .radio-dot::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--chili);
+}
+
+.summary-row {
+  display: flex; justify-content: space-between;
+  font-size: 13px; padding: 6px 0;
+}
+.summary-row.total { font-weight: 800; font-size: 15px; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; }
+
+/* ---------- Auth tabs (login) ---------- */
+.segmented {
+  display: flex;
+  background: var(--line-soft);
+  border-radius: 100px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.segmented button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #8A867C;
+}
+.segmented button.active { background: var(--paper-raised); color: var(--graphite-strong); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* ---------- Stepper acompanhamento ---------- */
+.tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.tracker-step {
+  display: flex;
+  gap: 14px;
+  padding-bottom: 22px;
+  position: relative;
+}
+.tracker-step:last-child { padding-bottom: 0; }
+.tracker-step::before {
+  content: '';
+  position: absolute;
+  left: 11px; top: 26px; bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.tracker-step:last-child::before { display: none; }
+.tracker-dot {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--line-soft);
+  color: #8A867C;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.tracker-step.done .tracker-dot { background: var(--basil); color: white; }
+.tracker-step.current .tracker-dot { background: var(--chili); color: white; }
+.tracker-step .label { font-weight: 700; font-size: 13.5px; }
+.tracker-step .time { font-size: 11.5px; color: #8A867C; margin-top: 2px; }
+
+/* ---------- Bottom nav ---------- */
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid var(--line);
+  background: var(--paper-raised);
+  position: sticky;
+  bottom: 0;
+}
+.bottom-nav a {
+  flex: 1;
+  padding: 10px 0 calc(8px + env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8A867C;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.bottom-nav a.active { color: var(--chili); }
+.bottom-nav .icon { font-size: 17px; }
+
+.empty-state { text-align: center; padding: 50px 20px; color: #8A867C; font-size: 13px; }
+
+.top-nav-back {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 18px 4px;
+}
+.top-nav-back button {
+  background: var(--line-soft);
+  border: none;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+.top-nav-back h1 { font-size: 15px; font-weight: 800; margin: 0; }

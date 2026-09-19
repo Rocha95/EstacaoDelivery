@@ -1,68 +1,56 @@
-# Sistema de Pedidos e Delivery
+# Estação Delivery
 
-Monorepo do sistema: painel do estabelecimento e app do cliente, cada um
-com seu próprio frontend e backend, compartilhando um único banco de
-dados (via `packages/database`).
+Monorepo com dois módulos usando o mesmo PostgreSQL/Prisma:
 
-## Por que cada sistema tem seu próprio backend?
+- `painel/frontend`: painel do estabelecimento (porta 5173)
+- `painel/backend`: API do estabelecimento (porta 3333)
+- `cliente/frontend`: aplicativo web do cliente (porta 5174)
+- `cliente/backend`: API pública/autenticada do cliente (porta 3334)
+- `packages/database`: Prisma/schema compartilhado
 
-Painel e cliente atendem públicos muito diferentes. O backend do painel
-expõe operações administrativas (gerenciar produtos, ver todos os
-pedidos, relatórios, usuários da equipe); o backend do cliente expõe só
-o que faz sentido pra um consumidor externo acessar (cardápio público,
-criar pedido, validar cupom, endereços da própria conta). Separar os
-dois evita que uma rota administrativa fique acessível por engano pelo
-app público, e permite deployar/escalar cada API de forma independente.
+## Configuração
 
-O que as duas áreas realmente compartilham é o **modelo de dados** — daí
-o schema Prisma viver em `packages/database`, um pacote só, importado
-pelos dois backends.
-
-## Estrutura
-
-```
-sistema-delivery/
-├── package.json                 # raiz: define os workspaces npm
-├── packages/
-│   ├── shared-ui/
-│   │   └── tokens.css           # cores e tipografia compartilhadas entre os dois frontends
-│   └── database/
-│       ├── prisma/schema.prisma # modelo de dados único
-│       ├── prisma/seed.js
-│       └── src/index.js         # exporta o client Prisma já configurado
-├── painel/
-│   ├── frontend/                 # React — porta 5173
-│   └── backend/                   # Express — porta 3333 — rotas administrativas
-└── cliente/
-    ├── frontend/                  # React — porta 5174
-    └── backend/                    # Express — porta 3334 — rotas públicas/do consumidor
-```
-
-## Como rodar
+1. Crie `cliente/backend/.env` a partir de `cliente/backend/.env.example`.
+2. Crie `painel/backend/.env` a partir de `painel/backend/.env.example`.
+3. Garanta que `DATABASE_URL` aponta para o mesmo PostgreSQL usado pelos dois backends.
+4. Defina uma `JWT_SECRET` forte no ambiente do cliente.
+5. Gere o Prisma Client e aplique as alterações do schema:
 
 ```bash
-npm install                  # instala as dependências de todos os workspaces
-
-cp packages/database/.env.example packages/database/.env   # ajuste com seu Postgres
+npm install
+npm run prisma:generate --workspace packages/database
 npm run db:migrate
 npm run db:seed
-
-npm run dev:painel:backend    # terminal 1 — http://localhost:3333/api
-npm run dev:painel:frontend   # terminal 2 — http://localhost:5173
-npm run dev:cliente:backend   # terminal 3 — http://localhost:3334/api
-npm run dev:cliente:frontend  # terminal 4 — http://localhost:5174
 ```
 
-Hoje os dois frontends ainda usam dados mock em memória
-(`src/data/mock.js`). O próximo passo é trocar essas chamadas mock pelas
-chamadas HTTP às APIs correspondentes.
+## Executar
 
-## Próximos passos
+Em terminais separados:
 
-1. Trocar os mocks de `painel/frontend` e `cliente/frontend` pelas
-   chamadas às APIs.
-2. Autenticação de verdade (JWT): `cliente/backend` já tem
-   `POST /api/auth/entrar` e `/cadastrar`, falta emitir um token e os
-   dois backends validarem quem está chamando (`Usuario.tipo`/`papel`
-   já existem no schema pra isso).
-3. Geocoding real para calcular `distanciaKm` de um endereço novo.
+```bash
+npm run dev:painel:backend
+npm run dev:painel:frontend
+npm run dev:cliente:backend
+npm run dev:cliente:frontend
+```
+
+Cliente: `http://localhost:5174`
+
+API Cliente: `http://localhost:3334/api`
+
+Painel: `http://localhost:5173`
+
+API Painel: `http://localhost:3333/api`
+
+## Fluxo do cliente
+
+1. Cliente consulta o catálogo no banco.
+2. Login/cadastro gera JWT.
+3. Endereços e pedidos são vinculados ao usuário autenticado.
+4. O carrinho envia somente IDs de produtos/adicionais e quantidades.
+5. A API valida disponibilidade, adicionais, pedido mínimo, cupom, frete e forma de pagamento.
+6. O total é recalculado no servidor antes da gravação.
+7. O mesmo pedido fica imediatamente disponível no Painel.
+8. O acompanhamento consulta o status real do pedido periodicamente.
+
+> O endereço precisa ter `distanciaKm` preenchida para o cálculo da taxa de entrega. Para uma operação real, recomenda-se substituir esse campo por cálculo automático por coordenadas/geocodificação.
