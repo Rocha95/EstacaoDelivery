@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
+import { obterDistanciaDoEndereco } from './taxasEntrega.controller.js'
 
 const INCLUDE_PADRAO = {
   cliente: { select: { id: true, nome: true, telefone: true } },
@@ -143,12 +144,23 @@ async function calcularDesconto(cupom, subtotal) {
 }
 
 export async function criar(req, res) {
-  const { tipoEntrega, enderecoId, formaPagamento, itens, cupomId, observacoes } = req.body
+  const { tipoEntrega, enderecoId, formaPagamento, itens, cupomId, observacoes, agendadoPara } = req.body
 
   if (!['DELIVERY', 'RETIRADA'].includes(tipoEntrega)) throw new ApiError(400, 'Tipo de entrega inválido.')
   if (!['PIX', 'DINHEIRO_ENTREGA', 'CARTAO_ENTREGA'].includes(formaPagamento)) throw new ApiError(400, 'Forma de pagamento inválida.')
   if (!Array.isArray(itens) || itens.length === 0) throw new ApiError(400, 'Adicione ao menos um item ao pedido.')
   if (itens.length > 50) throw new ApiError(400, 'O pedido possui itens demais.')
+
+  let dataAgendamento = null
+  if (agendadoPara) {
+    dataAgendamento = new Date(agendadoPara)
+    if (Number.isNaN(dataAgendamento.getTime())) throw new ApiError(400, 'Data de agendamento inválida.')
+    const agora = Date.now()
+    const minimo = agora + 30 * 60 * 1000
+    const maximo = agora + 7 * 24 * 60 * 60 * 1000
+    if (dataAgendamento.getTime() < minimo) throw new ApiError(400, 'O agendamento deve ser feito com pelo menos 30 minutos de antecedência.')
+    if (dataAgendamento.getTime() > maximo) throw new ApiError(400, 'O agendamento pode ser feito para no máximo 7 dias.')
+  }
 
   const config = await prisma.configuracao.findUnique({ where: { id: 'default' } })
   if (!config) throw new ApiError(400, 'Configuração do estabelecimento não encontrada.')
@@ -170,7 +182,7 @@ export async function criar(req, res) {
     })
     if (!endereco) throw new ApiError(400, 'Endereço de entrega inválido.')
 
-    const distancia = numero(endereco.distanciaKm)
+    const distancia = await obterDistanciaDoEndereco(endereco, config)
     const taxa = await calcularTaxa(distancia)
     if (taxa === null) throw new ApiError(400, 'O endereço está fora do raio de entrega.')
     taxaEntrega = taxa
@@ -200,6 +212,7 @@ export async function criar(req, res) {
       desconto,
       total,
       observacoes: observacoes?.trim() || null,
+      agendadoPara: dataAgendamento,
       itens: {
         create: snapshots.map(item => ({
           produtoId: item.produtoId,

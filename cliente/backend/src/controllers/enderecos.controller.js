@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
+import { geocodificarEndereco } from '../utils/geocoding.js'
 
 export async function listar(req, res) {
   const enderecos = await prisma.endereco.findMany({
@@ -10,11 +11,13 @@ export async function listar(req, res) {
 }
 
 export async function criar(req, res) {
-  const { apelido, rua, numero, complemento, bairro, cidade, estado, cep, latitude, longitude, distanciaKm } = req.body
+  const { apelido, rua, numero, complemento, bairro, cidade, estado, cep } = req.body
 
   if (!rua?.trim() || !bairro?.trim()) {
     throw new ApiError(400, 'Informe rua e bairro.')
   }
+
+  const coordenadas = await geocodificarEndereco({ rua, numero, bairro, cidade, estado, cep })
 
   const endereco = await prisma.endereco.create({
     data: {
@@ -27,9 +30,9 @@ export async function criar(req, res) {
       cidade: cidade?.trim() || '',
       estado: estado?.trim() || '',
       cep: cep?.trim() || null,
-      latitude: latitude !== undefined && latitude !== null ? Number(latitude) : null,
-      longitude: longitude !== undefined && longitude !== null ? Number(longitude) : null,
-      distanciaKm: distanciaKm !== undefined && distanciaKm !== null ? Number(distanciaKm) : null,
+      latitude: coordenadas.latitude,
+      longitude: coordenadas.longitude,
+      distanciaKm: null,
     },
   })
 

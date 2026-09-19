@@ -57,7 +57,7 @@ model Endereco {
   cep         String?
   latitude    Float?
   longitude   Float?
-  distanciaKm Float? // calculado a partir do endereço do estabelecimento (Configuracao)
+  distanciaKm Float? // calculado automaticamente a partir das coordenadas do estabelecimento e do endereço
 
   pedidos  Pedido[]
   criadoEm DateTime @default(now())
@@ -273,6 +273,7 @@ model Pedido {
   cupom       Cupom?  @relation(fields: [cupomId], references: [id])
   cupomId     String?
   observacoes String?
+  agendadoPara DateTime?
 
   itens ItemPedido[]
 

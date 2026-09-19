@@ -12,6 +12,8 @@ export default function CheckoutPagamento() {
   const [erro, setErro] = useState('')
   const [carregandoTaxa, setCarregandoTaxa] = useState(false)
   const [finalizando, setFinalizando] = useState(false)
+  const [agendar, setAgendar] = useState(false)
+  const [agendadoPara, setAgendadoPara] = useState('')
 
   useEffect(() => {
     if (modoEntrega !== 'delivery' || !enderecoSelecionado) {
@@ -19,7 +21,7 @@ export default function CheckoutPagamento() {
       return
     }
     setCarregandoTaxa(true)
-    calcularTaxaEntrega(Number(enderecoSelecionado.distanciaKm))
+    calcularTaxaEntrega(enderecoSelecionado.id)
       .then((resultado) => {
         if (!resultado.dentroDoRaio) throw new Error('O endereço está fora do raio de entrega.')
         setTaxaEntrega(Number(resultado.valor) || 0)
@@ -54,6 +56,7 @@ export default function CheckoutPagamento() {
 
   const finalizar = async () => {
     if (!pagamento || finalizando || carregandoTaxa || itens.length === 0) return
+    if (agendar && !agendadoPara) { setErro('Escolha a data e o horário do agendamento.'); return }
     if (modoEntrega === 'delivery' && !enderecoSelecionado) {
       setErro('Selecione um endereço de entrega.')
       return
@@ -68,6 +71,7 @@ export default function CheckoutPagamento() {
         enderecoId: modoEntrega === 'delivery' ? enderecoSelecionado.id : undefined,
         formaPagamento: pagamento,
         cupomId: cupom?.id || undefined,
+        agendadoPara: agendar ? agendadoPara : undefined,
         itens: itens.map((item) => ({
           produtoId: item.produtoId,
           quantidade: item.quantidade,
@@ -93,6 +97,23 @@ export default function CheckoutPagamento() {
           <button className="btn-outline" style={{ borderRadius: 8, padding: '0 16px', fontWeight: 700 }} onClick={aplicarCupom}>Aplicar</button>
         </div>
         {cupom && <div style={{ color: 'var(--basil)', fontSize: 12, marginBottom: 8, fontWeight: 700 }}>Cupom {cupom.codigo} aplicado ✓</div>}
+
+        <div className="section-title">Quando receber?</div>
+        <div className={`option-row ${!agendar ? 'selected' : ''}`} onClick={() => setAgendar(false)}>
+          <div><div className="title">⚡ O mais rápido possível</div><div className="subtitle">Produção assim que o pedido for aceito</div></div><div className="radio-dot" />
+        </div>
+        <div className={`option-row ${agendar ? 'selected' : ''}`} onClick={() => setAgendar(true)}>
+          <div><div className="title">🕐 Agendar pedido</div><div className="subtitle">Escolha uma data e horário</div></div><div className="radio-dot" />
+        </div>
+        {agendar && (
+          <div className="card" style={{ margin: '8px 0 16px' }}>
+            <div className="field">
+              <label>Data e horário</label>
+              <input type="datetime-local" value={agendadoPara} min={new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16)} onChange={(e) => setAgendadoPara(e.target.value)} />
+              <div style={{ fontSize: 11.5, color: '#8A867C', marginTop: 6 }}>Agendamento com pelo menos 30 minutos de antecedência e até 7 dias.</div>
+            </div>
+          </div>
+        )}
 
         <div className="section-title">Forma de pagamento</div>
         <div className={`option-row ${pagamento === 'PIX' ? 'selected' : ''}`} onClick={() => setPagamento('PIX')}>

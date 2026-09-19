@@ -59,8 +59,10 @@ export const validarCupom = (codigo, subtotal) =>
     body: JSON.stringify({ codigo, subtotal }),
   })
 
-export const calcularTaxaEntrega = (distanciaKm) =>
-  request(`/api/taxas-entrega/calcular?distanciaKm=${encodeURIComponent(distanciaKm)}`)
+export const calcularTaxaEntrega = (enderecoId) =>
+  request(`/api/taxas-entrega/calcular?enderecoId=${encodeURIComponent(enderecoId)}`)
+export const calcularRotaEndereco = (enderecoId) =>
+  request(`/api/rotas/endereco/${encodeURIComponent(enderecoId)}`)
 
 export const buscarPedidos = () => request('/api/pedidos')
 export const buscarPedidoPorId = (id) => request(`/api/pedidos/${encodeURIComponent(id)}`)

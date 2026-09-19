@@ -13,7 +13,7 @@ export default function Enderecos() {
   const [novo, setNovo] = useState(false)
   const [form, setForm] = useState({
     apelido: '', rua: '', bairro: '', numero: '', complemento: '',
-    cidade: '', estado: '', cep: '', distanciaKm: '',
+    cidade: '', estado: '', cep: '',
   })
 
   // Carrega a lista de endereços do backend ao montar a tela
@@ -50,7 +50,6 @@ export default function Enderecos() {
         cidade: form.cidade,
         estado: form.estado,
         cep: form.cep,
-        distanciaKm: form.distanciaKm === '' ? null : Number(form.distanciaKm),
       }
 
       const novoEndereco = await criarEndereco(payload)
@@ -64,12 +63,12 @@ export default function Enderecos() {
 
       setForm({
         apelido: '', rua: '', bairro: '', numero: '', complemento: '',
-        cidade: '', estado: '', cep: '', distanciaKm: '',
+        cidade: '', estado: '', cep: '',
       })
       setNovo(false)
     } catch (err) {
       console.error('Erro ao criar endereço:', err)
-      alert('Erro ao salvar o endereço. Tente novamente.')
+      alert(err.message || 'Não foi possível localizar ou salvar o endereço.')
     } finally {
       setSalvando(false)
     }
@@ -195,15 +194,14 @@ export default function Enderecos() {
                     <input value={form.cep} onChange={(e) => setForm({ ...form, cep: e.target.value })} placeholder="00000-000" />
                   </div>
                 </div>
-                <div className="field">
-                  <label>Distância até o estabelecimento (km)</label>
-                  <input type="number" min="0" step="0.1" value={form.distanciaKm} onChange={(e) => setForm({ ...form, distanciaKm: e.target.value })} placeholder="Ex.: 3.2" />
+                <div style={{ fontSize: 12, color: '#6B675F', marginTop: 8 }}>
+                  A localização e a distância até o estabelecimento serão calculadas automaticamente pelo sistema.
                 </div>
                 <button
                   className="btn-block btn-primary"
                   style={{ marginTop: 12 }}
                   onClick={adicionar}
-                  disabled={salvando || !form.rua}
+                  disabled={salvando || !form.rua || !form.bairro || !form.cidade || !form.estado}
                 >
                   {salvando ? 'Salvando...' : 'Salvar endereço'}
                 </button>

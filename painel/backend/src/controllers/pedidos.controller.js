@@ -49,8 +49,11 @@ export async function obter(req, res) {
 // do Dashboard e da tela de Pedidos).
 export async function avancarStatus(req, res) {
   const { id } = req.params
-  const pedido = await prisma.pedido.findUnique({ where: { id }, select: { status: true } })
+  const pedido = await prisma.pedido.findUnique({ where: { id }, select: { status: true, agendadoPara: true } })
   if (!pedido) throw new ApiError(404, 'Pedido não encontrado.')
+  if (pedido.agendadoPara && new Date(pedido.agendadoPara).getTime() > Date.now()) {
+    throw new ApiError(400, `Este pedido está agendado para ${new Date(pedido.agendadoPara).toLocaleString('pt-BR')}.`)
+  }
 
   const proximo = PROXIMO_STATUS[pedido.status]
   if (!proximo) throw new ApiError(400, `Pedido em "${pedido.status}" não tem próxima etapa.`)

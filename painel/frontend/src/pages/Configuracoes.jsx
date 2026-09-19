@@ -68,7 +68,7 @@ export default function Configuracoes() {
         <div className="form-grid">
           <div className="field"><label>Nome do estabelecimento</label><input value={form.nomeEstabelecimento} onChange={(e) => setForm({ ...form, nomeEstabelecimento: e.target.value })} required /></div>
           <div className="field"><label>Telefone / WhatsApp</label><input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
-          <div className="field" style={{ gridColumn: '1 / -1' }}><label>Endereço</label><input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} /></div>
+          <div className="field" style={{ gridColumn: '1 / -1' }}><label>Endereço do estabelecimento</label><input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} placeholder="Rua, número, bairro, cidade - UF" /><div className="muted" style={{ marginTop: 6 }}>Este endereço fica salvo no banco e é usado como origem para calcular automaticamente a rota e a taxa de entrega.</div></div>
           <div className="field"><label>Pedido mínimo (R$)</label><input type="number" step="0.01" value={form.pedidoMinimo} onChange={(e) => setForm({ ...form, pedidoMinimo: e.target.value })} /></div>
           <div className="field"><label>Tempo médio (min)</label><input type="number" value={form.tempoPreparoMedioMin} onChange={(e) => setForm({ ...form, tempoPreparoMedioMin: e.target.value })} /></div>
           <div className="field"><label>Raio de entrega (km)</label><input type="number" step="0.1" value={form.raioMaximoEntregaKm} onChange={(e) => setForm({ ...form, raioMaximoEntregaKm: e.target.value })} /></div>

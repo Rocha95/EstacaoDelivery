@@ -201,21 +201,21 @@ export default function Pedidos() {
               <th>Pagamento</th>
               <th>Total</th>
               <th>Status</th>
-              <th>Hora</th>
+              <th>Horário</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {visiveis.map((o) => (
               <tr key={o.id}>
-                <td className="order-id">#{o.id}</td>
+                <td className="order-id">#{o.numero || String(o.id).slice(-6)}</td>
                 <td>{getClienteNome(o.cliente)}</td>
                 <td>{o.tipo === 'delivery' ? 'Delivery' : 'Retirada'}</td>
                 <td style={{ color: '#6B675F', maxWidth: 220 }}>{formatItens(o.itens)}</td>
                 <td>{o.pagamento || 'N/A'}</td>
                 <td className="money">R$ {Number(o.total || 0).toFixed(2)}</td>
                 <td><StatusPill status={o.status} /></td>
-                <td>{o.hora || o.created_at || '--:--'}</td>
+                <td>{o.agendadoPara ? `Agendado: ${new Date(o.agendadoPara).toLocaleString('pt-BR')}` : (o.hora || o.created_at || '--:--')}</td>
                 <td>
                   {NEXT_STATUS[o.status] ? (
                     <button className="btn btn-ghost btn-sm" onClick={() => advance(o.id, o.status)}>

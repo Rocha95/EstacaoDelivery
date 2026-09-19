@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
 import { buscarPedidos } from '../services/api'
+import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 
 export default function Historico() {
   const navigate = useNavigate()
   const { usuario } = useAuth()
+  const { adicionarItem } = useCart()
 
   const [pedidos, setPedidos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -88,6 +90,17 @@ export default function Historico() {
 
   if (!usuario) return <div className="app-frame"><div className="content"><p>Entre na sua conta para ver seus pedidos.</p><button className="btn-block btn-primary" onClick={() => navigate('/login?next=/historico')}>Entrar</button></div><BottomNav /></div>
 
+  const repetirPedido = (pedido) => {
+    if (!pedido?.itens?.length) return
+    pedido.itens.forEach((item) => {
+      if (!item.produto) return
+      adicionarItem(item.produto, (item.adicionais || []).map((a) => ({
+        opcaoId: a.opcaoId, nome: a.nome, preco: Number(a.preco) || 0, grupoId: a.opcao?.grupoId,
+      })), item.quantidade)
+    })
+    navigate('/carrinho')
+  }
+
   return (
     <div className="app-frame">
       <div className="top-nav-back" style={{ padding: '18px 18px 4px' }}>
@@ -148,6 +161,7 @@ export default function Historico() {
                 <div style={{ fontSize: 11.5, color: '#8A867C' }}>
                   {dataFormatada} {statusTexto ? `· ${statusTexto}` : ''}
                 </div>
+                <button className="btn-outline" style={{ marginTop: 10, width: '100%' }} onClick={(e) => { e.stopPropagation(); repetirPedido(p) }}>↻ Repetir pedido</button>
               </div>
             )
           })}

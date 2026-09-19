@@ -1,6 +1,14 @@
 import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 
+
+function imagemPublica(imagemUrl) {
+  if (!imagemUrl) return null
+  if (/^https?:\/\//i.test(imagemUrl)) return imagemUrl
+  const base = (process.env.PAINEL_PUBLIC_URL || 'http://localhost:3333').replace(/\/$/, '')
+  return `${base}${imagemUrl.startsWith('/') ? '' : '/'}${imagemUrl}`
+}
+
 // Só o que o cliente pode ver: categorias ativas e produtos ativos,
 // com os grupos de adicionais (e só as opções ativas de cada grupo).
 export async function listarCategorias(req, res) {
@@ -27,6 +35,7 @@ export async function listarProdutos(req, res) {
   res.json(produtos.map((p) => ({
     ...p,
     categoriaNome: p.categoria?.nome,
+    imagemUrl: imagemPublica(p.imagemUrl),
     gruposAdicionais: p.gruposAdicionais.map((pg) => pg.grupo),
   })))
 }
@@ -46,6 +55,7 @@ export async function obterProduto(req, res) {
   res.json({
     ...produto,
     categoriaNome: produto.categoria?.nome,
+    imagemUrl: imagemPublica(produto.imagemUrl),
     gruposAdicionais: produto.gruposAdicionais.map((pg) => pg.grupo),
   })
 }
