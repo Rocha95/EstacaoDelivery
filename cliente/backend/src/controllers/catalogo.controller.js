@@ -65,5 +65,5 @@ export async function listarCombos(req, res) {
     where: { ativo: true },
     include: { itens: { include: { produto: true } } },
   })
-  res.json(combos)
+  res.json(combos.map((c) => ({ ...c, imagemUrl: imagemPublica(c.imagemUrl) })))
 }

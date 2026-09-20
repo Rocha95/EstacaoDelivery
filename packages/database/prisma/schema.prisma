@@ -146,9 +146,10 @@ model ProdutoGrupoAdicional {
 }
 
 model Combo {
-  id    String  @id @default(uuid())
-  nome  String
-  preco Decimal @db.Decimal(10, 2)
+  id        String  @id @default(uuid())
+  nome      String
+  preco     Decimal @db.Decimal(10, 2)
+  imagemUrl String?
   ativo Boolean @default(true)
 
   itens       ComboItem[]

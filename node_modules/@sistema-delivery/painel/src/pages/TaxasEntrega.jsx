@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 
 const FAIXAS_PADRAO = [
-  { id: 1, faixa: 'Até 2 km', valor: 3.0 },
-  { id: 2, faixa: 'De 2 a 5 km', valor: 6.0 },
-  { id: 3, faixa: 'De 5 a 8 km', valor: 9.0 },
-  { id: 4, faixa: 'De 8 a 12 km', valor: 12.0 },
+  { id: 'padrao-1', faixa: 'Até 2 km', ateKm: 2, valor: 3.0, ordem: 1 },
+  { id: 'padrao-2', faixa: 'De 2 a 5 km', ateKm: 5, valor: 6.0, ordem: 2 },
+  { id: 'padrao-3', faixa: 'De 5 a 8 km', ateKm: 8, valor: 9.0, ordem: 3 },
+  { id: 'padrao-4', faixa: 'De 8 a 12 km', ateKm: 12, valor: 12.0, ordem: 4 },
 ]
 
 export default function TaxasEntrega() {
   const [taxas, setTaxas] = useState(FAIXAS_PADRAO)
-  const [endereco, setEndereco] = useState('Av. Presidente Vargas, 450 – Votorantim/SP')
+  const [endereco, setEndereco] = useState('')
   const [raioMax, setRaioMax] = useState(12)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -25,10 +25,10 @@ export default function TaxasEntrega() {
         if (response.ok) {
           const data = await response.json()
           
-          if (data.taxas && Array.isArray(data.taxas)) setTaxas(data.taxas)
+          if (data.taxas && Array.isArray(data.taxas)) setTaxas(data.taxas.map((t) => ({ ...t, faixa: t.faixa || `Até ${t.ateKm} km` })))
           else if (Array.isArray(data)) setTaxas(data)
 
-          if (data.endereco) setEndereco(data.endereco)
+          if (data.endereco !== undefined) setEndereco(data.endereco || '')
           if (data.raioMax !== undefined) setRaioMax(data.raioMax)
         } else {
           console.warn(`API /api/taxas-entrega retornou status ${response.status}. Usando valores padrão.`)
@@ -60,7 +60,9 @@ export default function TaxasEntrega() {
       endereco,
       raioMax: parseFloat(raioMax) || 0,
       taxas: taxas.map((t) => ({
-        ...t,
+        id: t.id,
+        ateKm: t.ateKm,
+        ordem: t.ordem,
         valor: parseFloat(t.valor) || 0,
       })),
     }

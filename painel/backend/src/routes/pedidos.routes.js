@@ -27,7 +27,7 @@ router.route('/:id')
   .all(validarId)
   .get(asyncHandler(controller.obter))
   // Atualização genérica de status ou dados do pedido (RESTful)
-  .patch(asyncHandler(controller.atualizarStatus || controller.avancarStatus))
+  .patch(asyncHandler(controller.avancarStatus))
   .put(asyncHandler(controller.atualizar || controller.atualizarStatus))
   .delete(asyncHandler(controller.deletar || controller.cancelar))
 
@@ -43,7 +43,7 @@ router.patch('/:id/cancelar', validarId, asyncHandler(controller.cancelar))
 router.patch(
   '/:id/status',
   validarId,
-  asyncHandler(controller.atualizarStatus || controller.avancarStatus)
+  asyncHandler(controller.avancarStatus)
 )
 
 export default router

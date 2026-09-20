@@ -7,24 +7,24 @@ export const STATUS = {
 
 export const STATUS_LABEL = {
   [STATUS.RECEBIDO]: 'Recebido',
-  [STATUS.PRODUCAO]: 'Em produção',
-  [STATUS.ENTREGA]: 'Saiu para entrega',
+  [STATUS.EM_PRODUCAO]: 'Em produção',
+  [STATUS.SAIU_PARA_ENTREGA]: 'Saiu para entrega',
   [STATUS.FINALIZADO]: 'Finalizado',
 }
 
 export const STATUS_PILL_CLASS = {
   [STATUS.RECEBIDO]: 'pill-muted',
-  [STATUS.PRODUCAO]: 'pill-mustard',
-  [STATUS.ENTREGA]: 'pill-sky',
+  [STATUS.EM_PRODUCAO]: 'pill-mustard',
+  [STATUS.SAIU_PARA_ENTREGA]: 'pill-sky',
   [STATUS.FINALIZADO]: 'pill-basil',
 }
 
 export const initialOrders = [
   { id: '10482', cliente: 'Marina Alves', tipo: 'delivery', itens: ['1x Combo Smash Duplo', '1x Coca 350ml'], total: 42.9, pagamento: 'Pix', status: STATUS.RECEBIDO, hora: '19:42' },
   { id: '10483', cliente: 'Diego Costa', tipo: 'retirada', itens: ['2x Burrito de Frango'], total: 58.0, pagamento: 'Cartão na entrega', status: STATUS.RECEBIDO, hora: '19:44' },
-  { id: '10479', cliente: 'Bia Ferreira', tipo: 'delivery', itens: ['1x Poke Salmão', '1x Suco Detox'], total: 39.5, pagamento: 'Pix', status: STATUS.PRODUCAO, hora: '19:31' },
-  { id: '10480', cliente: 'Rafael Nunes', tipo: 'delivery', itens: ['1x Pizza Marguerita G', '1x Refri 2L'], total: 67.9, pagamento: 'Dinheiro na entrega', status: STATUS.PRODUCAO, hora: '19:35' },
-  { id: '10476', cliente: 'Carla Souza', tipo: 'delivery', itens: ['1x Combo Kids', '1x Milkshake'], total: 33.0, pagamento: 'Pix', status: STATUS.ENTREGA, hora: '19:18' },
+  { id: '10479', cliente: 'Bia Ferreira', tipo: 'delivery', itens: ['1x Poke Salmão', '1x Suco Detox'], total: 39.5, pagamento: 'Pix', status: STATUS.EM_PRODUCAO, hora: '19:31' },
+  { id: '10480', cliente: 'Rafael Nunes', tipo: 'delivery', itens: ['1x Pizza Marguerita G', '1x Refri 2L'], total: 67.9, pagamento: 'Dinheiro na entrega', status: STATUS.EM_PRODUCAO, hora: '19:35' },
+  { id: '10476', cliente: 'Carla Souza', tipo: 'delivery', itens: ['1x Combo Kids', '1x Milkshake'], total: 33.0, pagamento: 'Pix', status: STATUS.SAIU_PARA_ENTREGA, hora: '19:18' },
   { id: '10474', cliente: 'João Prado', tipo: 'retirada', itens: ['3x Coxinha', '1x Guaraná lata'], total: 24.5, pagamento: 'Cartão na entrega', status: STATUS.FINALIZADO, hora: '19:02' },
   { id: '10473', cliente: 'Elisa Martins', tipo: 'delivery', itens: ['1x Salada Caesar', '1x Água com gás'], total: 29.9, pagamento: 'Pix', status: STATUS.FINALIZADO, hora: '18:55' },
 ]

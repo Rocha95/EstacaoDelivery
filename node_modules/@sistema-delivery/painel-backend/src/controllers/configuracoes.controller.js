@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 
-async function geocodificarEstabelecimento(endereco) {
+export async function geocodificarEstabelecimento(endereco) {
   if (!endereco?.trim()) return null
   const url = new URL(process.env.GEOCODING_URL || 'https://nominatim.openstreetmap.org/search')
   url.searchParams.set('q', `${endereco}, Brasil`)

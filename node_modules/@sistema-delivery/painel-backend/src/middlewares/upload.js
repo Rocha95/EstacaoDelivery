@@ -36,3 +36,4 @@ function criarUploadImagem(pasta) {
 // Nome do campo que o frontend usa no FormData (veja Produtos.jsx / Adicionais.jsx).
 export const uploadFotoProduto = criarUploadImagem('produtos')
 export const uploadFotoAdicional = criarUploadImagem('adicionais')
+export const uploadFotoCombo = criarUploadImagem('combos')

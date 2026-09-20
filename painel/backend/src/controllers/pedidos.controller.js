@@ -49,18 +49,34 @@ export async function obter(req, res) {
 // do Dashboard e da tela de Pedidos).
 export async function avancarStatus(req, res) {
   const { id } = req.params
-  const pedido = await prisma.pedido.findUnique({ where: { id }, select: { status: true, agendadoPara: true } })
+  const pedido = await prisma.pedido.findUnique({
+    where: { id },
+    select: { status: true, agendadoPara: true },
+  })
   if (!pedido) throw new ApiError(404, 'Pedido não encontrado.')
+
   if (pedido.agendadoPara && new Date(pedido.agendadoPara).getTime() > Date.now()) {
     throw new ApiError(400, `Este pedido está agendado para ${new Date(pedido.agendadoPara).toLocaleString('pt-BR')}.`)
   }
 
+  const aliases = {
+    PRODUCAO: 'EM_PRODUCAO',
+    ENTREGA: 'SAIU_PARA_ENTREGA',
+  }
+  const solicitado = req.body?.status ? (aliases[req.body.status] || req.body.status) : null
   const proximo = PROXIMO_STATUS[pedido.status]
+
   if (!proximo) throw new ApiError(400, `Pedido em "${pedido.status}" não tem próxima etapa.`)
+  if (solicitado && solicitado !== proximo) {
+    throw new ApiError(409, `Transição inválida: ${pedido.status} → ${solicitado}. Próxima etapa permitida: ${proximo}.`)
+  }
 
   const atualizado = await prisma.pedido.update({
     where: { id },
-    data: { status: proximo, [CAMPO_TIMESTAMP[proximo]]: new Date() },
+    data: {
+      status: proximo,
+      [CAMPO_TIMESTAMP[proximo]]: new Date(),
+    },
     include: INCLUDE_PADRAO,
   })
   res.json(atualizado)

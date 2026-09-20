@@ -45,7 +45,13 @@ export async function criar(req, res) {
 
   const preco = req.body.preco !== undefined ? Number(req.body.preco) : 0
   const ativo = req.body.ativo === undefined ? true : req.body.ativo === 'true' || req.body.ativo === true
-  const grupo = await encontrarOuCriarGrupo(req.body.grupo)
+  let grupo
+  if (req.body.grupoId) {
+    grupo = await prisma.grupoAdicional.findUnique({ where: { id: req.body.grupoId } })
+    if (!grupo) throw new ApiError(400, 'Grupo de adicionais não encontrado.')
+  } else {
+    grupo = await encontrarOuCriarGrupo(req.body.grupo)
+  }
 
   const opcao = await prisma.opcaoAdicional.create({
     data: {
@@ -73,7 +79,11 @@ export async function atualizar(req, res) {
   const novaImagem = resolverImagemUrl(req)
   if (novaImagem !== undefined) data.imagemUrl = novaImagem
 
-  if (req.body.grupo) {
+  if (req.body.grupoId) {
+    const grupo = await prisma.grupoAdicional.findUnique({ where: { id: req.body.grupoId } })
+    if (!grupo) throw new ApiError(400, 'Grupo de adicionais não encontrado.')
+    data.grupoId = grupo.id
+  } else if (req.body.grupo) {
     const grupo = await encontrarOuCriarGrupo(req.body.grupo)
     data.grupoId = grupo.id
   }

@@ -4,6 +4,8 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 
 const router = Router()
 
+router.get('/', asyncHandler(controller.obterConfiguracaoEntrega))
+router.put('/', asyncHandler(controller.salvarConfiguracaoEntrega))
 router.get('/faixas', asyncHandler(controller.listarFaixas))
 router.post('/faixas', asyncHandler(controller.criarFaixa))
 router.put('/faixas/:id', asyncHandler(controller.atualizarFaixa))
