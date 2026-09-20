@@ -4,8 +4,25 @@ import { ApiError } from '../utils/ApiError.js'
 
 function imagemPublica(imagemUrl) {
   if (!imagemUrl) return null
-  if (/^https?:\/\//i.test(imagemUrl)) return imagemUrl
-  return `${imagemUrl.startsWith('/') ? '' : '/'}${imagemUrl}`
+  const valor = String(imagemUrl).trim()
+  if (!valor) return null
+
+  // Compatibilidade com imagens antigas salvas como URL absoluta do Painel.
+  // O Cliente Backend serve /uploads, então normalizamos essas URLs para
+  // evitar que o navegador tente acessar localhost:3333.
+  if (/^https?:\/\//i.test(valor)) {
+    try {
+      const url = new URL(valor)
+      if (url.pathname.startsWith('/uploads/')) {
+        return `${url.pathname}${url.search}${url.hash}`
+      }
+      return valor
+    } catch {
+      return valor
+    }
+  }
+
+  return `${valor.startsWith('/') ? '' : '/'}${valor}`
 }
 
 // Só o que o cliente pode ver: categorias ativas e produtos ativos.

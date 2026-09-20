@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
-import { geocodificarEstabelecimento } from './configuracoes.controller.js'
+import { geocodificarEstabelecimento, montarEnderecoGeocodificacao } from './configuracoes.controller.js'
 
 export async function listarFaixas(req, res) {
   const faixas = await prisma.faixaTaxaEntrega.findMany({ orderBy: { ordem: 'asc' } })
@@ -43,6 +43,12 @@ export async function obterConfiguracaoEntrega(req, res) {
 
   res.json({
     endereco: config.endereco,
+    enderecoRua: config.enderecoRua,
+    enderecoNumero: config.enderecoNumero,
+    enderecoBairro: config.enderecoBairro,
+    enderecoCidade: config.enderecoCidade,
+    enderecoEstado: config.enderecoEstado,
+    enderecoCep: config.enderecoCep,
     raioMax: config.raioMaximoEntregaKm,
     taxas: faixas,
   })
@@ -89,5 +95,5 @@ export async function salvarConfiguracaoEntrega(req, res) {
   }
 
   const faixas = await prisma.faixaTaxaEntrega.findMany({ orderBy: { ordem: 'asc' } })
-  res.json({ endereco: config.endereco, raioMax: config.raioMaximoEntregaKm, taxas: faixas })
+  res.json({ endereco: config.endereco, enderecoRua: config.enderecoRua, enderecoNumero: config.enderecoNumero, enderecoBairro: config.enderecoBairro, enderecoCidade: config.enderecoCidade, enderecoEstado: config.enderecoEstado, enderecoCep: config.enderecoCep, raioMax: config.raioMaximoEntregaKm, taxas: faixas })
 }

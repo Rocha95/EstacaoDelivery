@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopNavBack from '../components/TopNavBack'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { buscarEnderecos, buscarConfiguracao, calcularTaxaEntrega, criarEndereco } from '../services/api'
 
 const FORM_INICIAL = {
@@ -10,6 +11,7 @@ const FORM_INICIAL = {
 
 export default function CheckoutEntrega() {
   const navigate = useNavigate()
+  const { usuario } = useAuth()
   const { enderecoSelecionado, setEnderecoSelecionado, modoEntrega, setModoEntrega } = useCart()
   const [enderecos, setEnderecos] = useState([])
   const [config, setConfig] = useState(null)
@@ -20,6 +22,8 @@ export default function CheckoutEntrega() {
   const [form, setForm] = useState(FORM_INICIAL)
 
   useEffect(() => {
+    if (!usuario) return
+
     Promise.all([buscarEnderecos(), buscarConfiguracao()])
       .then(([dados, configuracao]) => {
         setEnderecos(dados || [])
@@ -27,9 +31,12 @@ export default function CheckoutEntrega() {
         if (!enderecoSelecionado && dados?.length) setEnderecoSelecionado(dados[0])
         if (!modoEntrega) setModoEntrega(configuracao?.aceitaDelivery ? 'delivery' : 'retirada')
       })
-      .catch((err) => console.error('Erro ao carregar checkout:', err))
+      .catch((err) => {
+        console.error('Erro ao carregar checkout:', err)
+        if (err.status === 401) navigate('/login?next=/checkout/entrega', { replace: true })
+      })
       .finally(() => setCarregando(false))
-  }, [])
+  }, [usuario, navigate])
 
   useEffect(() => {
     if (modoEntrega !== 'delivery' || !enderecos.length) return

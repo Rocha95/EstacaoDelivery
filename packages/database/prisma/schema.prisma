@@ -228,6 +228,12 @@ model Configuracao {
   nomeEstabelecimento  String
   telefone             String?
   endereco             String
+  enderecoRua          String?
+  enderecoNumero       String?
+  enderecoBairro       String?
+  enderecoCidade       String?
+  enderecoEstado       String?
+  enderecoCep          String?
   latitude             Float?
   longitude            Float?
   pedidoMinimo         Decimal @db.Decimal(10, 2) @default(0)

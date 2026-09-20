@@ -1,12 +1,19 @@
 import { ApiError } from './ApiError.js'
 
-function textoEndereco(endereco) {
+function textoEndereco(endereco = {}) {
+  const rua = endereco.rua || endereco.enderecoRua
+  const numero = endereco.numero || endereco.enderecoNumero
+  const bairro = endereco.bairro || endereco.enderecoBairro
+  const cidade = endereco.cidade || endereco.enderecoCidade
+  const estado = endereco.estado || endereco.enderecoEstado
+  const cep = endereco.cep || endereco.enderecoCep
+
   return [
-    endereco.rua && endereco.numero ? `${endereco.rua}, ${endereco.numero}` : endereco.rua,
-    endereco.bairro,
-    endereco.cidade,
-    endereco.estado,
-    endereco.cep,
+    rua && numero ? `${rua}, ${numero}` : rua,
+    bairro,
+    cidade,
+    estado,
+    cep,
     'Brasil',
   ].filter(Boolean).join(', ')
 }

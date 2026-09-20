@@ -2,16 +2,15 @@ import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 
 const INCLUDE_PADRAO = {
-  categoria: { include: { opcoes: { where: { ativo: true } } } },
+  categoria: { include: { adicionais: { where: { ativo: true }, orderBy: { nome: 'asc' } } } },
 }
 
-const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3333}`
 
 function formatar(produto) {
   return {
     ...produto,
     categoriaNome: produto.categoria?.nome,
-    gruposAdicionais: produto.categoria ? [{ id: produto.categoria.id, nome: produto.categoria.nome, maximoSelecao: (p.categoria.opcoes || []).length, obrigatorio: false, opcoes: produto.categoria.opcoes || [] }] : [],
+    gruposAdicionais: produto.categoria ? [{ id: produto.categoria.id, nome: produto.categoria.nome, maximoSelecao: (produto.categoria.adicionais || []).length, obrigatorio: false, opcoes: produto.categoria.adicionais || [] }] : [],
   }
 }
 
@@ -19,7 +18,7 @@ function formatar(produto) {
 // mas o campo imagemUrl foi preenchido (colar um link), usa esse. Se nada
 // foi enviado, retorna undefined pra não sobrescrever o que já existia.
 function resolverImagemUrl(req) {
-  if (req.file) return `${BASE_URL}/uploads/produtos/${req.file.filename}`
+  if (req.file) return `/uploads/produtos/${req.file.filename}`
   if (req.body.imagemUrl) return req.body.imagemUrl
   return undefined
 }

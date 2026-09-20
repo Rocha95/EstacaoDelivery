@@ -6,18 +6,30 @@ const cacheGeocodificacao = new Map()
 const CACHE_MS = 5 * 60 * 1000
 
 async function obterCoordenadasEstabelecimento(config) {
-  const enderecoTexto = String(config.endereco || '').trim()
+  const partesEndereco = [
+    config.enderecoRua,
+    config.enderecoNumero,
+    config.enderecoBairro,
+    config.enderecoCidade,
+    config.enderecoEstado,
+    config.enderecoCep,
+  ].filter(Boolean)
+  const enderecoTexto = partesEndereco.join('|') || String(config.endereco || '').trim()
   if (!enderecoTexto) throw new ApiError(422, 'O endereço do estabelecimento não está configurado.')
 
   const agora = Date.now()
   const cache = cacheGeocodificacao.get(`estabelecimento:${enderecoTexto}`)
   if (cache && agora - cache.timestamp < CACHE_MS) return cache.coordenadas
 
-  // Regeocodifica o endereço salvo para evitar usar coordenadas antigas
-  // de uma configuração alterada anteriormente. O resultado é cacheado
-  // por alguns minutos para não consultar o serviço externo a cada pedido.
   try {
-    const localizado = await geocodificarEndereco({ rua: enderecoTexto })
+    const localizado = await geocodificarEndereco({
+      enderecoRua: config.enderecoRua || config.endereco,
+      enderecoNumero: config.enderecoNumero,
+      enderecoBairro: config.enderecoBairro,
+      enderecoCidade: config.enderecoCidade,
+      enderecoEstado: config.enderecoEstado,
+      enderecoCep: config.enderecoCep,
+    })
     const coordenadas = { latitude: localizado.latitude, longitude: localizado.longitude }
     cacheGeocodificacao.set(`estabelecimento:${enderecoTexto}`, { timestamp: agora, coordenadas })
     await prisma.configuracao.update({
@@ -26,7 +38,9 @@ async function obterCoordenadasEstabelecimento(config) {
     })
     return coordenadas
   } catch (error) {
-    if (Number.isFinite(Number(config.latitude)) && Number.isFinite(Number(config.longitude))) {
+    // Não usa silenciosamente coordenadas antigas, pois isso poderia gerar
+    // uma distância/frete incorreto depois que o estabelecimento mudar.
+    if (process.env.ALLOW_STALE_ESTABLISHMENT_COORDS === 'true' && Number.isFinite(Number(config.latitude)) && Number.isFinite(Number(config.longitude))) {
       return { latitude: Number(config.latitude), longitude: Number(config.longitude) }
     }
     throw error

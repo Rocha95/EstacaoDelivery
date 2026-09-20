@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { authApi } from '../services/api'
 
 const AuthContext = createContext(null)
@@ -7,12 +7,24 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => {
     try {
       const salvo = localStorage.getItem('usuario')
-      return salvo ? JSON.parse(salvo) : null
+      const token = localStorage.getItem('token')
+      return salvo && token ? JSON.parse(salvo) : null
     } catch {
       localStorage.removeItem('usuario')
       return null
     }
   })
+
+  useEffect(() => {
+    const aoExpirar = () => {
+      setUsuario(null)
+      localStorage.removeItem('token')
+      localStorage.removeItem('usuario')
+    }
+
+    window.addEventListener('cliente:auth-expirada', aoExpirar)
+    return () => window.removeEventListener('cliente:auth-expirada', aoExpirar)
+  }, [])
 
   const entrar = (dadosUsuario, token) => {
     setUsuario(dadosUsuario)

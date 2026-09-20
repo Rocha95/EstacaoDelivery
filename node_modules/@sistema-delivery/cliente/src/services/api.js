@@ -2,8 +2,26 @@ export const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3334')
 
 export function getImagemUrl(caminhoOuUrl) {
   if (!caminhoOuUrl) return null
-  if (/^https?:\/\//i.test(caminhoOuUrl)) return caminhoOuUrl
-  const caminho = `${caminhoOuUrl.startsWith('/') ? '' : '/'}${caminhoOuUrl}`
+
+  const valor = String(caminhoOuUrl).trim()
+  if (!valor) return null
+
+  // URLs antigas podem ter sido gravadas pelo Painel como
+  // http://localhost:3333/uploads/.... O navegador do Cliente deve sempre
+  // buscar /uploads pelo próprio backend do Cliente (3334).
+  if (/^https?:\/\//i.test(valor)) {
+    try {
+      const url = new URL(valor)
+      if (url.pathname.startsWith('/uploads/')) {
+        return `${API_URL}${url.pathname}${url.search}${url.hash}`
+      }
+      return valor
+    } catch {
+      return valor
+    }
+  }
+
+  const caminho = `${valor.startsWith('/') ? '' : '/'}${valor}`
   return `${API_URL}${caminho}`
 }
 
@@ -33,8 +51,13 @@ async function request(endpoint, options = {}) {
     if (res.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('usuario')
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('cliente:auth-expirada'))
+      }
     }
-    throw new Error(message)
+    const erro = new Error(message)
+    erro.status = res.status
+    throw erro
   }
 
   return data

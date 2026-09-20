@@ -5,14 +5,25 @@ import { geocodificarEndereco, calcularDistanciaRotaKm } from '../utils/geocodin
 async function obterEstabelecimento() {
   const config = await prisma.configuracao.findUnique({ where: { id: 'default' } })
   if (!config) throw new ApiError(404, 'Configuração do estabelecimento não encontrada.')
+
+  const revalidar = process.env.REVALIDAR_COORDENADAS_ESTABELECIMENTO !== 'false'
   let { latitude, longitude } = config
-  if (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) {
-    const localizado = await geocodificarEndereco({ rua: config.endereco })
+
+  if (revalidar || !Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) {
+    const localizado = await geocodificarEndereco({
+      enderecoRua: config.enderecoRua || config.endereco,
+      enderecoNumero: config.enderecoNumero,
+      enderecoBairro: config.enderecoBairro,
+      enderecoCidade: config.enderecoCidade,
+      enderecoEstado: config.enderecoEstado,
+      enderecoCep: config.enderecoCep,
+    })
     latitude = localizado.latitude
     longitude = localizado.longitude
     await prisma.configuracao.update({ where: { id: 'default' }, data: { latitude, longitude } })
   }
-  return { latitude, longitude, config }
+
+  return { latitude: Number(latitude), longitude: Number(longitude), config }
 }
 
 export async function calcularParaEndereco(req, res) {

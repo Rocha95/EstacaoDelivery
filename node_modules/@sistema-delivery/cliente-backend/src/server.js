@@ -12,4 +12,5 @@ const app = createApp()
 
 app.listen(PORT, () => {
   console.log(`API rodando em http://localhost:${PORT}/api`)
+  console.log(`Imagens do Cliente disponíveis em http://localhost:${PORT}/uploads/`)
 })

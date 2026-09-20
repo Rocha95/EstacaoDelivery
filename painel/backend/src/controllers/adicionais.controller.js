@@ -1,10 +1,9 @@
 import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 
-const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3333}`
 
 function resolverImagemUrl(req) {
-  if (req.file) return `${BASE_URL}/uploads/adicionais/${req.file.filename}`
+  if (req.file) return `/uploads/adicionais/${req.file.filename}`
   if (req.body.imagemUrl) return req.body.imagemUrl
   return undefined
 }
