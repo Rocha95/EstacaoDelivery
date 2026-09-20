@@ -3,7 +3,8 @@ export const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3334')
 export function getImagemUrl(caminhoOuUrl) {
   if (!caminhoOuUrl) return null
   if (/^https?:\/\//i.test(caminhoOuUrl)) return caminhoOuUrl
-  return `${API_URL}${caminhoOuUrl.startsWith('/') ? '' : '/'}${caminhoOuUrl}`
+  const caminho = `${caminhoOuUrl.startsWith('/') ? '' : '/'}${caminhoOuUrl}`
+  return `${API_URL}${caminho}`
 }
 
 async function request(endpoint, options = {}) {

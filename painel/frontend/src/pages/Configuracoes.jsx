@@ -49,8 +49,11 @@ export default function Configuracoes() {
           raioMaximoEntregaKm: Number(form.raioMaximoEntregaKm) || 0,
         }),
       })
-      if (!response.ok) throw new Error('Não foi possível salvar.')
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.erro || data.message || 'Não foi possível salvar.')
+      setForm((prev) => ({ ...prev, ...data, pedidoMinimo: String(data.pedidoMinimo ?? prev.pedidoMinimo), tempoPreparoMedioMin: String(data.tempoPreparoMedioMin ?? prev.tempoPreparoMedioMin), raioMaximoEntregaKm: String(data.raioMaximoEntregaKm ?? prev.raioMaximoEntregaKm) }))
       setSavedSuccess(true)
+      if (data.aviso) alert(data.aviso)
       setTimeout(() => setSavedSuccess(false), 2500)
     } catch (err) {
       alert(err.message)

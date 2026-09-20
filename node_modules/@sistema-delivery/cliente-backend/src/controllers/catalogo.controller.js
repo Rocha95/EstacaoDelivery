@@ -5,12 +5,11 @@ import { ApiError } from '../utils/ApiError.js'
 function imagemPublica(imagemUrl) {
   if (!imagemUrl) return null
   if (/^https?:\/\//i.test(imagemUrl)) return imagemUrl
-  const base = (process.env.PAINEL_PUBLIC_URL || 'http://localhost:3333').replace(/\/$/, '')
-  return `${base}${imagemUrl.startsWith('/') ? '' : '/'}${imagemUrl}`
+  return `${imagemUrl.startsWith('/') ? '' : '/'}${imagemUrl}`
 }
 
-// Só o que o cliente pode ver: categorias ativas e produtos ativos,
-// com os grupos de adicionais (e só as opções ativas de cada grupo).
+// Só o que o cliente pode ver: categorias ativas e produtos ativos.
+// Os adicionais seguem a mesma Categoria do produto; não existe grupo separado no cardápio.
 export async function listarCategorias(req, res) {
   const categorias = await prisma.categoria.findMany({
     where: { ativa: true },
@@ -24,10 +23,7 @@ export async function listarProdutos(req, res) {
   const produtos = await prisma.produto.findMany({
     where: { ativo: true, categoriaId: categoriaId || undefined, categoria: { ativa: true } },
     include: {
-      categoria: true,
-      gruposAdicionais: {
-        include: { grupo: { include: { opcoes: { where: { ativo: true } } } } },
-      },
+      categoria: { include: { adicionais: { where: { ativo: true }, orderBy: { nome: 'asc' } } } },
     },
     orderBy: { nome: 'asc' },
   })
@@ -36,18 +32,15 @@ export async function listarProdutos(req, res) {
     ...p,
     categoriaNome: p.categoria?.nome,
     imagemUrl: imagemPublica(p.imagemUrl),
-    gruposAdicionais: p.gruposAdicionais.map((pg) => pg.grupo),
+    gruposAdicionais: p.categoria ? [{ id: p.categoria.id, nome: p.categoria.nome, maximoSelecao: (p.categoria.adicionais || []).length, obrigatorio: false, opcoes: (p.categoria.adicionais || []).map((a) => ({ ...a, imagemUrl: imagemPublica(a.imagemUrl) })) }] : [],
   })))
 }
 
 export async function obterProduto(req, res) {
   const produto = await prisma.produto.findFirst({
-    where: { id: req.params.id, ativo: true },
+    where: { id: req.params.id, ativo: true, categoria: { ativa: true } },
     include: {
-      categoria: true,
-      gruposAdicionais: {
-        include: { grupo: { include: { opcoes: { where: { ativo: true } } } } },
-      },
+      categoria: { include: { adicionais: { where: { ativo: true }, orderBy: { nome: 'asc' } } } },
     },
   })
   if (!produto) throw new ApiError(404, 'Produto não encontrado ou indisponível.')
@@ -56,7 +49,7 @@ export async function obterProduto(req, res) {
     ...produto,
     categoriaNome: produto.categoria?.nome,
     imagemUrl: imagemPublica(produto.imagemUrl),
-    gruposAdicionais: produto.gruposAdicionais.map((pg) => pg.grupo),
+    gruposAdicionais: produto.categoria ? [{ id: produto.categoria.id, nome: produto.categoria.nome, maximoSelecao: (produto.categoria.adicionais || []).length, obrigatorio: false, opcoes: (produto.categoria.adicionais || []).map((a) => ({ ...a, imagemUrl: imagemPublica(a.imagemUrl) })) }] : [],
   })
 }
 
@@ -65,5 +58,12 @@ export async function listarCombos(req, res) {
     where: { ativo: true },
     include: { itens: { include: { produto: true } } },
   })
-  res.json(combos.map((c) => ({ ...c, imagemUrl: imagemPublica(c.imagemUrl) })))
+  res.json(combos.map((c) => ({
+    ...c,
+    imagemUrl: imagemPublica(c.imagemUrl),
+    itens: (c.itens || []).map((item) => ({
+      ...item,
+      produto: item.produto ? { ...item.produto, imagemUrl: imagemPublica(item.produto.imagemUrl) } : item.produto,
+    })),
+  })))
 }

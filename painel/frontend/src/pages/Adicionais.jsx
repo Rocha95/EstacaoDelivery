@@ -1,21 +1,24 @@
 import { useEffect, useState } from 'react'
 
-const FORM_VAZIO = { id: null, nome: '', preco: '', grupoId: '', imagemUrl: '', arquivoImagem: null }
+const FORM_VAZIO = { id: null, nome: '', preco: '', categoriaId: '', imagemUrl: '', arquivoImagem: null }
 
 export default function Adicionais() {
   const [adicionais, setAdicionais] = useState([])
-  const [grupos, setGrupos] = useState([])
+  const [categorias, setCategorias] = useState([])
   const [form, setForm] = useState(FORM_VAZIO)
   const [imagePreview, setImagePreview] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   const carregar = async () => {
-    const [rAdicionais, rGrupos] = await Promise.all([fetch('/api/adicionais'), fetch('/api/adicionais/grupos')])
+    const [rAdicionais, rCategorias] = await Promise.all([
+      fetch('/api/adicionais'),
+      fetch('/api/categorias'),
+    ])
     if (!rAdicionais.ok) throw new Error('Não foi possível carregar os adicionais.')
-    if (!rGrupos.ok) throw new Error('Não foi possível carregar os grupos.')
+    if (!rCategorias.ok) throw new Error('Não foi possível carregar as categorias.')
     setAdicionais(await rAdicionais.json())
-    setGrupos(await rGrupos.json())
+    setCategorias(await rCategorias.json())
   }
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export default function Adicionais() {
       id: item.id,
       nome: item.nome || '',
       preco: item.preco != null ? Number(item.preco).toFixed(2) : '',
-      grupoId: item.grupoId || '',
+      categoriaId: item.categoriaId || '',
       imagemUrl: item.imagemUrl || '',
       arquivoImagem: null,
     })
@@ -64,12 +67,12 @@ export default function Adicionais() {
 
   const salvar = async (e) => {
     e.preventDefault()
-    if (!form.nome.trim() || !form.grupoId) return
+    if (!form.nome.trim() || !form.categoriaId) return
     setSubmitting(true)
     try {
       const formData = new FormData()
       formData.append('nome', form.nome.trim())
-      formData.append('grupoId', form.grupoId)
+      formData.append('categoriaId', form.categoriaId)
       formData.append('preco', String(parseFloat(form.preco) || 0))
       if (form.arquivoImagem) formData.append('imagem', form.arquivoImagem)
       else if (form.imagemUrl) formData.append('imagemUrl', form.imagemUrl)
@@ -77,7 +80,7 @@ export default function Adicionais() {
       const url = form.id ? `/api/adicionais/${form.id}` : '/api/adicionais'
       const response = await fetch(url, { method: form.id ? 'PATCH' : 'POST', body: formData })
       const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(data.erro || 'Não foi possível salvar o adicional.')
+      if (!response.ok) throw new Error(data.erro || data.message || 'Não foi possível salvar o adicional.')
 
       if (form.id) setAdicionais((prev) => prev.map((a) => (a.id === form.id ? data : a)))
       else setAdicionais((prev) => [...prev, data])
@@ -89,7 +92,9 @@ export default function Adicionais() {
     }
   }
 
-  const gruposPorNome = [...new Set(adicionais.map((a) => a.grupo || 'Outros'))]
+  const categoriasMap = new Map(categorias.map((categoria) => [categoria.id, categoria.nome]))
+  const categoriasComAdicionais = categorias.filter((categoria) => adicionais.some((a) => a.categoriaId === categoria.id))
+  const adicionaisSemCategoria = adicionais.filter((a) => !a.categoriaId)
 
   if (loading) return <div className="loading">Carregando adicionais...</div>
 
@@ -98,7 +103,7 @@ export default function Adicionais() {
       <div className="section-head">
         <div>
           <h2>Adicionais</h2>
-          <div className="muted">Itens extras que o cliente pode incluir nos pedidos</div>
+          <div className="muted">Os adicionais usam as mesmas categorias dos produtos.</div>
         </div>
       </div>
 
@@ -110,18 +115,20 @@ export default function Adicionais() {
             <input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Ex: Cheddar extra" disabled={submitting} required />
           </div>
           <div className="field">
-            <label>Grupo de adicionais</label>
-            <select value={form.grupoId} onChange={(e) => setForm({ ...form, grupoId: e.target.value })} disabled={submitting} required>
-              <option value="">Selecione um grupo...</option>
-              {grupos.map((grupo) => <option key={grupo.id} value={grupo.id}>{grupo.nome}</option>)}
+            <label>Categoria</label>
+            <select value={form.categoriaId} onChange={(e) => setForm({ ...form, categoriaId: e.target.value })} disabled={submitting} required>
+              <option value="">Selecione uma categoria...</option>
+              {categorias.filter((categoria) => categoria.ativa !== false).map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>
+              ))}
             </select>
           </div>
           <div className="field">
             <label>Preço (R$)</label>
-            <input type="number" step="0.01" value={form.preco} onChange={(e) => setForm({ ...form, preco: e.target.value })} placeholder="0,00" disabled={submitting} />
+            <input type="number" step="0.01" min="0" value={form.preco} onChange={(e) => setForm({ ...form, preco: e.target.value })} placeholder="0,00" disabled={submitting} />
           </div>
           <div className="field" style={{ display: 'flex', alignItems: 'end', gap: 8 }}>
-            <button className="btn btn-primary" type="submit" disabled={submitting || !form.nome.trim() || !form.grupoId}>{submitting ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Adicionar'}</button>
+            <button className="btn btn-primary" type="submit" disabled={submitting || !form.nome.trim() || !form.categoriaId}>{submitting ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Adicionar'}</button>
             {form.id && <button type="button" className="btn btn-ghost" onClick={resetForm} disabled={submitting}>Cancelar</button>}
           </div>
         </div>
@@ -142,11 +149,11 @@ export default function Adicionais() {
         </div>
       </form>
 
-      {gruposPorNome.map((grupo) => {
-        const itensDoGrupo = adicionais.filter((a) => (a.grupo || 'Outros') === grupo)
+      {categoriasComAdicionais.map((categoria) => {
+        const itensDoGrupo = adicionais.filter((a) => a.categoriaId === categoria.id)
         return (
-          <div key={grupo} style={{ marginBottom: 20 }}>
-            <div className="section-head" style={{ marginBottom: 8 }}><h2 style={{ fontSize: 13, color: '#8A867C' }}>{grupo}</h2></div>
+          <div key={categoria.id} style={{ marginBottom: 20 }}>
+            <div className="section-head" style={{ marginBottom: 8 }}><h2 style={{ fontSize: 13, color: '#8A867C' }}>{categoria.nome}</h2></div>
             <div className="card">
               <table className="data-table"><tbody>
                 {itensDoGrupo.map((a) => {
@@ -171,6 +178,14 @@ export default function Adicionais() {
           </div>
         )
       })}
+
+      {adicionaisSemCategoria.length > 0 && (
+        <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+          <strong>Adicionais sem categoria</strong>
+          <div className="muted" style={{ marginTop: 6 }}>Esses registros são legados e não aparecerão automaticamente nos produtos. Edite-os e selecione uma categoria.</div>
+          <div style={{ marginTop: 12 }}>{adicionaisSemCategoria.map((a) => <button key={a.id} type="button" className="btn btn-ghost" style={{ marginRight: 8, marginBottom: 8 }} onClick={() => editar(a)}>{a.nome} — Editar</button>)}</div>
+        </div>
+      )}
 
       {adicionais.length === 0 && <div className="card" style={{ padding: 24, textAlign: 'center' }}><div className="empty-state">Nenhum adicional cadastrado no banco de dados.</div></div>}
     </div>

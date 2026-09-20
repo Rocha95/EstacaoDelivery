@@ -88,7 +88,12 @@ export default function ProductDetail() {
               const preco = Number(opcao.preco) || 0
               return (
                 <div key={opcao.id} className={`option-row ${selecionado ? 'selected' : ''}`} onClick={() => toggleOpcao(grupo, opcao)}>
-                  <div><div className="title">{opcao.nome}</div>{preco > 0 && <div className="subtitle">+ R$ {preco.toFixed(2)}</div>}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {opcao.imagemUrl
+                      ? <img src={getImagemUrl(opcao.imagemUrl)} alt={opcao.nome} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8 }} />
+                      : <div style={{ width: 48, height: 48, borderRadius: 8, background: '#F3F2EE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>＋</div>}
+                    <div><div className="title">{opcao.nome}</div>{preco > 0 && <div className="subtitle">+ R$ {preco.toFixed(2)}</div>}</div>
+                  </div>
                   <div className="radio-dot" />
                 </div>
               )

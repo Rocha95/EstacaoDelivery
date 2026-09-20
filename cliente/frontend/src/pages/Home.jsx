@@ -3,19 +3,25 @@ import { useNavigate } from 'react-router-dom'
 import StoreHeader from '../components/StoreHeader'
 import BottomNav from '../components/BottomNav'
 import BottomCartBar from '../components/BottomCartBar'
-import { buscarProdutos, getImagemUrl } from '../services/api'
+import { buscarProdutos, buscarCombos, getImagemUrl } from '../services/api'
+import { useCart } from '../context/CartContext'
 
 export default function Home() {
   const navigate = useNavigate()
   const [produtos, setProdutos] = useState([])
+  const [combos, setCombos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [categoriaAtiva, setCategoriaAtiva] = useState('Todas')
   const [errosImagem, setErrosImagem] = useState({})
+  const { adicionarCombo } = useCart()
 
   useEffect(() => {
-    buscarProdutos()
-      .then((data) => setProdutos(Array.isArray(data) ? data : []))
+    Promise.all([buscarProdutos(), buscarCombos()])
+      .then(([produtosData, combosData]) => {
+        setProdutos(Array.isArray(produtosData) ? produtosData : [])
+        setCombos(Array.isArray(combosData) ? combosData : [])
+      })
       .catch((err) => setError(err.message || 'Não foi possível carregar o cardápio.'))
       .finally(() => setLoading(false))
   }, [])
@@ -64,6 +70,36 @@ export default function Home() {
           </div>
         )}
         {!loading && !error && visiveis.length === 0 && <div className="empty-state">Nenhum produto disponível.</div>}
+
+        {!loading && !error && combos.length > 0 && (
+          <section style={{ marginTop: 28, paddingBottom: 20 }}>
+            <div className="section-title">Combos</div>
+            <div className="product-grid">
+              {combos.map((combo) => {
+                const src = getImagemUrl(combo.imagemUrl)
+                return (
+                  <div key={combo.id} className="product-card">
+                    <div className="product-thumb" style={{ overflow: 'hidden' }}>
+                      {src
+                        ? <img src={src} alt={combo.nome} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : combo.emoji || '🍔'}
+                    </div>
+                    <div className="product-info">
+                      <div className="name">{combo.nome}</div>
+                      <div style={{ fontSize: 11.5, color: '#8A867C', margin: '4px 0 8px' }}>
+                        {(combo.itens || []).map((item) => `${item.quantidade || 1}x ${item.produto?.nome || ''}`).join(', ')}
+                      </div>
+                      <div className="row">
+                        <span className="price">R$ {Number(combo.preco).toFixed(2)}</span>
+                        <button className="add-btn" onClick={(e) => { e.stopPropagation(); adicionarCombo(combo) }}>+</button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
       </div>
       <BottomCartBar />
       <BottomNav />

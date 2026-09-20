@@ -8,39 +8,43 @@ export async function geocodificarEstabelecimento(endereco) {
   url.searchParams.set('format', 'jsonv2')
   url.searchParams.set('limit', '1')
   url.searchParams.set('countrycodes', 'br')
-  const response = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': process.env.GEOCODING_USER_AGENT || 'EstacaoDelivery/1.0' } })
-  if (!response.ok) throw new ApiError(422, 'Não foi possível localizar o endereço do estabelecimento.')
-  const [resultado] = await response.json()
-  const latitude = Number(resultado?.lat); const longitude = Number(resultado?.lon)
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw new ApiError(422, 'Não foi possível localizar o endereço do estabelecimento.')
-  return { latitude, longitude }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json', 'User-Agent': process.env.GEOCODING_USER_AGENT || 'EstacaoDelivery/1.0' } })
+    if (!response.ok) return null
+    const [resultado] = await response.json()
+    const latitude = Number(resultado?.lat); const longitude = Number(resultado?.lon)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+    return { latitude, longitude }
+  } catch { return null } finally { clearTimeout(timeout) }
 }
 
-const DADOS_PADRAO = {
-  id: 'default',
-  nomeEstabelecimento: 'Meu Estabelecimento',
-  endereco: '',
-}
+const DADOS_PADRAO = { id: 'default', nomeEstabelecimento: 'Meu Estabelecimento', endereco: '' }
 
 export async function obter(req, res) {
-  const config = await prisma.configuracao.upsert({
-    where: { id: 'default' },
-    update: {},
-    create: DADOS_PADRAO,
-  })
+  const config = await prisma.configuracao.upsert({ where: { id: 'default' }, update: {}, create: DADOS_PADRAO })
   res.json(config)
 }
 
 export async function atualizar(req, res) {
-  const {
-    nomeEstabelecimento, telefone, endereco, latitude, longitude,
-    pedidoMinimo, tempoPreparoMedioMin, raioMaximoEntregaKm,
-    aceitaDelivery, aceitaRetirada,
-  } = req.body
+  const { nomeEstabelecimento, telefone, endereco, latitude, longitude, pedidoMinimo, tempoPreparoMedioMin, raioMaximoEntregaKm, aceitaDelivery, aceitaRetirada } = req.body
+  const enderecoAlterado = endereco !== undefined
+  let coordenadas = undefined
+  let aviso = null
 
-  let coordenadas = null
-  if (endereco !== undefined && endereco?.trim() && (latitude === undefined || longitude === undefined || latitude === null || longitude === null)) {
-    coordenadas = await geocodificarEstabelecimento(endereco)
+  if (enderecoAlterado) {
+    if (!String(endereco || '').trim()) coordenadas = { latitude: null, longitude: null }
+    else if (latitude !== undefined && longitude !== undefined && latitude !== null && longitude !== null) coordenadas = { latitude: Number(latitude), longitude: Number(longitude) }
+    else {
+      coordenadas = await geocodificarEstabelecimento(endereco)
+      if (!coordenadas) {
+        coordenadas = { latitude: null, longitude: null }
+        aviso = 'Endereço salvo, mas não foi possível localizar as coordenadas automaticamente. O cálculo de rota ficará indisponível até o endereço ser geocodificado.'
+      }
+    }
+  } else if (latitude !== undefined || longitude !== undefined) {
+    coordenadas = { latitude: latitude === null ? null : Number(latitude), longitude: longitude === null ? null : Number(longitude) }
   }
 
   const config = await prisma.configuracao.upsert({
@@ -49,9 +53,7 @@ export async function atualizar(req, res) {
       ...(nomeEstabelecimento !== undefined && { nomeEstabelecimento }),
       ...(telefone !== undefined && { telefone }),
       ...(endereco !== undefined && { endereco }),
-      ...(latitude !== undefined && { latitude: latitude === null ? null : Number(latitude) }),
-      ...(coordenadas && { latitude: coordenadas.latitude, longitude: coordenadas.longitude }),
-      ...(longitude !== undefined && { longitude: longitude === null ? null : Number(longitude) }),
+      ...(coordenadas !== undefined && { latitude: coordenadas.latitude, longitude: coordenadas.longitude }),
       ...(pedidoMinimo !== undefined && { pedidoMinimo: Number(pedidoMinimo) }),
       ...(tempoPreparoMedioMin !== undefined && { tempoPreparoMedioMin: Number(tempoPreparoMedioMin) }),
       ...(raioMaximoEntregaKm !== undefined && { raioMaximoEntregaKm: Number(raioMaximoEntregaKm) }),
@@ -63,7 +65,7 @@ export async function atualizar(req, res) {
       nomeEstabelecimento: nomeEstabelecimento ?? DADOS_PADRAO.nomeEstabelecimento,
       telefone: telefone ?? null,
       endereco: endereco ?? '',
-      ...(coordenadas && { latitude: coordenadas.latitude, longitude: coordenadas.longitude }),
+      ...(coordenadas !== undefined && { latitude: coordenadas.latitude, longitude: coordenadas.longitude }),
       pedidoMinimo: pedidoMinimo !== undefined ? Number(pedidoMinimo) : 0,
       tempoPreparoMedioMin: tempoPreparoMedioMin !== undefined ? Number(tempoPreparoMedioMin) : 30,
       raioMaximoEntregaKm: raioMaximoEntregaKm !== undefined ? Number(raioMaximoEntregaKm) : 12,
@@ -71,5 +73,5 @@ export async function atualizar(req, res) {
       aceitaRetirada: aceitaRetirada !== undefined ? Boolean(aceitaRetirada) : true,
     },
   })
-  res.json(config)
+  res.json(aviso ? { ...config, aviso } : config)
 }

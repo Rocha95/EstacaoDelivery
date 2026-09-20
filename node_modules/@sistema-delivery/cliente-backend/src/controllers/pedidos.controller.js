@@ -50,7 +50,7 @@ async function validarItens(itens) {
   const [produtos, combos] = await Promise.all([
     produtosIds.length ? prisma.produto.findMany({
       where: { id: { in: produtosIds }, ativo: true, categoria: { ativa: true } },
-      include: { gruposAdicionais: { include: { grupo: { include: { opcoes: { where: { ativo: true } } } } } } },
+      include: { categoria: { include: { adicionais: { where: { ativo: true }, orderBy: { nome: 'asc' } } } } },
     }) : [],
     combosIds.length ? prisma.combo.findMany({
       where: { id: { in: combosIds }, ativo: true },
@@ -85,11 +85,11 @@ async function validarItens(itens) {
     }
 
     const precoBase = numero(entidade.preco)
-    const grupos = item.produtoId ? entidade.gruposAdicionais.map(pg => pg.grupo) : []
+    const grupos = item.produtoId && entidade.categoria ? [{ id: entidade.categoria.id, nome: entidade.categoria.nome, maximoSelecao: (entidade.categoria.adicionais || []).length, obrigatorio: false, opcoes: entidade.categoria.adicionais || [] }] : []
     const selecionados = Array.isArray(item.adicionais) ? item.adicionais : []
 
     const opcionaisPorId = new Map()
-    for (const grupo of grupos) for (const opcao of grupo.opcoes) opcionaisPorId.set(opcao.id, { ...opcao, grupoId: grupo.id })
+    for (const grupo of grupos) for (const opcao of grupo.opcoes) opcionaisPorId.set(opcao.id, { ...opcao, grupoId: grupo.id, categoriaId: grupo.id })
 
     const idsSelecionados = new Set()
     const porGrupo = new Map()

@@ -29,5 +29,11 @@ export async function calcularParaEndereco(req, res) {
 
   const estabelecimento = await obterEstabelecimento()
   const distanciaKm = await calcularDistanciaRotaKm(estabelecimento, { latitude, longitude })
-  res.json({ distanciaKm, metodo: 'rota_rodoviaria', origem: estabelecimento, destino: { latitude, longitude } })
+  res.json({
+    distanciaKm,
+    metodo: 'rota_rodoviaria',
+    origem: estabelecimento,
+    destino: { latitude, longitude },
+    origemRecalculada: true,
+  })
 }

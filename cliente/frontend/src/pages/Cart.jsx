@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import TopNavBack from '../components/TopNavBack'
 import { useCart } from '../context/CartContext'
+import { getImagemUrl } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function Cart() {
@@ -20,7 +21,9 @@ export default function Cart() {
 
         {itens.map((item) => (
           <div className="list-row" key={item.chave}>
-            <div className="list-thumb">{item.emoji}</div>
+            <div className="list-thumb">
+              {item.imagemUrl ? <img src={getImagemUrl(item.imagemUrl)} alt={item.nome} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} /> : item.emoji}
+            </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 13.5 }}>{item.nome}</div>
               {item.adicionais.length > 0 && (

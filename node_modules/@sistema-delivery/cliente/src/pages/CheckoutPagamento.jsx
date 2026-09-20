@@ -73,9 +73,10 @@ export default function CheckoutPagamento() {
         cupomId: cupom?.id || undefined,
         agendadoPara: agendar ? agendadoPara : undefined,
         itens: itens.map((item) => ({
-          produtoId: item.produtoId,
+          produtoId: item.produtoId || undefined,
+          comboId: item.comboId || undefined,
           quantidade: item.quantidade,
-          adicionais: item.adicionais.map((a) => ({ opcaoId: a.opcaoId })),
+          adicionais: item.produtoId ? item.adicionais.map((a) => ({ opcaoId: a.opcaoId })) : [],
         })),
       })
 

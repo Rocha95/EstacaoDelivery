@@ -2,25 +2,54 @@ import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 import { geocodificarEndereco, calcularDistanciaRotaKm } from '../utils/geocoding.js'
 
-async function obterCoordenadasEstabelecimento(config) {
-  if (Number.isFinite(Number(config.latitude)) && Number.isFinite(Number(config.longitude))) {
-    return { latitude: Number(config.latitude), longitude: Number(config.longitude) }
-  }
+const cacheGeocodificacao = new Map()
+const CACHE_MS = 5 * 60 * 1000
 
-  const localizado = await geocodificarEndereco({ rua: config.endereco })
-  await prisma.configuracao.update({
-    where: { id: 'default' },
-    data: { latitude: localizado.latitude, longitude: localizado.longitude },
-  })
-  return localizado
+async function obterCoordenadasEstabelecimento(config) {
+  const enderecoTexto = String(config.endereco || '').trim()
+  if (!enderecoTexto) throw new ApiError(422, 'O endereço do estabelecimento não está configurado.')
+
+  const agora = Date.now()
+  const cache = cacheGeocodificacao.get(`estabelecimento:${enderecoTexto}`)
+  if (cache && agora - cache.timestamp < CACHE_MS) return cache.coordenadas
+
+  // Regeocodifica o endereço salvo para evitar usar coordenadas antigas
+  // de uma configuração alterada anteriormente. O resultado é cacheado
+  // por alguns minutos para não consultar o serviço externo a cada pedido.
+  try {
+    const localizado = await geocodificarEndereco({ rua: enderecoTexto })
+    const coordenadas = { latitude: localizado.latitude, longitude: localizado.longitude }
+    cacheGeocodificacao.set(`estabelecimento:${enderecoTexto}`, { timestamp: agora, coordenadas })
+    await prisma.configuracao.update({
+      where: { id: 'default' },
+      data: { latitude: coordenadas.latitude, longitude: coordenadas.longitude },
+    })
+    return coordenadas
+  } catch (error) {
+    if (Number.isFinite(Number(config.latitude)) && Number.isFinite(Number(config.longitude))) {
+      return { latitude: Number(config.latitude), longitude: Number(config.longitude) }
+    }
+    throw error
+  }
 }
 
 async function obterDistanciaDoEndereco(endereco, config) {
   let latitude = endereco.latitude
   let longitude = endereco.longitude
+  const deveRevalidarDestino = process.env.REVALIDAR_COORDENADAS_ENDERECO === 'true'
 
-  if (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) {
-    const localizado = await geocodificarEndereco(endereco)
+  if (deveRevalidarDestino || !Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) {
+    const chave = `destino:${endereco.id}:${endereco.rua}:${endereco.numero || ''}:${endereco.bairro}:${endereco.cidade}:${endereco.estado}:${endereco.cep || ''}`
+    const agora = Date.now()
+    const cache = cacheGeocodificacao.get(chave)
+    const localizado = cache && agora - cache.timestamp < CACHE_MS
+      ? cache.coordenadas
+      : await geocodificarEndereco(endereco)
+
+    if (!cache || agora - cache.timestamp >= CACHE_MS) {
+      cacheGeocodificacao.set(chave, { timestamp: agora, coordenadas: localizado })
+    }
+
     latitude = localizado.latitude
     longitude = localizado.longitude
     await prisma.endereco.update({

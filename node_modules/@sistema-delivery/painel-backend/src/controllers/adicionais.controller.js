@@ -23,8 +23,8 @@ function formatarFlat(opcao) {
     preco: opcao.preco,
     ativo: opcao.ativo,
     imagemUrl: opcao.imagemUrl,
-    grupo: opcao.grupo?.nome ?? 'Outros',
-    grupoId: opcao.grupoId,
+    categoria: opcao.categoria?.nome ?? null,
+    categoriaId: opcao.categoriaId ?? null,
   }
 }
 
@@ -32,63 +32,58 @@ function formatarFlat(opcao) {
 
 export async function listar(req, res) {
   const opcoes = await prisma.opcaoAdicional.findMany({
-    include: { grupo: true },
+    include: { categoria: true },
     orderBy: { nome: 'asc' },
   })
   res.json(opcoes.map(formatarFlat))
 }
 
-// Cria (ou reaproveita, se já existir com esse nome) o grupo e a opção nele.
 export async function criar(req, res) {
-  const { nome } = req.body
+  const { nome, categoriaId } = req.body
   if (!nome) throw new ApiError(400, 'Informe o nome do adicional.')
+  if (!categoriaId) throw new ApiError(400, 'Selecione a categoria do adicional.')
+
+  const categoria = await prisma.categoria.findUnique({ where: { id: categoriaId } })
+  if (!categoria || !categoria.ativa) throw new ApiError(400, 'Categoria não encontrada ou inativa.')
 
   const preco = req.body.preco !== undefined ? Number(req.body.preco) : 0
   const ativo = req.body.ativo === undefined ? true : req.body.ativo === 'true' || req.body.ativo === true
-  let grupo
-  if (req.body.grupoId) {
-    grupo = await prisma.grupoAdicional.findUnique({ where: { id: req.body.grupoId } })
-    if (!grupo) throw new ApiError(400, 'Grupo de adicionais não encontrado.')
-  } else {
-    grupo = await encontrarOuCriarGrupo(req.body.grupo)
-  }
 
   const opcao = await prisma.opcaoAdicional.create({
     data: {
-      nome,
+      nome: nome.trim(),
       preco: Number.isNaN(preco) ? 0 : preco,
       ativo,
-      grupoId: grupo.id,
+      categoriaId: categoria.id,
       imagemUrl: resolverImagemUrl(req),
     },
-    include: { grupo: true },
+    include: { categoria: true },
   })
   res.status(201).json(formatarFlat(opcao))
 }
 
-// Atualização parcial — usada tanto pelo toggle (só manda { ativo }) quanto
-// por uma futura edição completa (nome, preço, grupo, foto).
 export async function atualizar(req, res) {
   const { id } = req.params
   const data = {}
 
-  if (req.body.nome !== undefined) data.nome = req.body.nome
-  if (req.body.preco !== undefined) data.preco = Number(req.body.preco)
+  if (req.body.nome !== undefined) data.nome = req.body.nome.trim()
+  if (req.body.preco !== undefined) {
+    const preco = Number(req.body.preco)
+    if (Number.isNaN(preco)) throw new ApiError(400, 'Preço inválido.')
+    data.preco = preco
+  }
   if (req.body.ativo !== undefined) data.ativo = req.body.ativo === 'true' || req.body.ativo === true
+
+  if (req.body.categoriaId !== undefined) {
+    const categoria = await prisma.categoria.findUnique({ where: { id: req.body.categoriaId } })
+    if (!categoria || !categoria.ativa) throw new ApiError(400, 'Categoria não encontrada ou inativa.')
+    data.categoriaId = categoria.id
+  }
 
   const novaImagem = resolverImagemUrl(req)
   if (novaImagem !== undefined) data.imagemUrl = novaImagem
 
-  if (req.body.grupoId) {
-    const grupo = await prisma.grupoAdicional.findUnique({ where: { id: req.body.grupoId } })
-    if (!grupo) throw new ApiError(400, 'Grupo de adicionais não encontrado.')
-    data.grupoId = grupo.id
-  } else if (req.body.grupo) {
-    const grupo = await encontrarOuCriarGrupo(req.body.grupo)
-    data.grupoId = grupo.id
-  }
-
-  const opcao = await prisma.opcaoAdicional.update({ where: { id }, data, include: { grupo: true } })
+  const opcao = await prisma.opcaoAdicional.update({ where: { id }, data, include: { categoria: true } })
   res.json(formatarFlat(opcao))
 }
 

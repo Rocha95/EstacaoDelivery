@@ -2,8 +2,7 @@ import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 
 const INCLUDE_PADRAO = {
-  categoria: true,
-  gruposAdicionais: { include: { grupo: { include: { opcoes: true } } } },
+  categoria: { include: { opcoes: { where: { ativo: true } } } },
 }
 
 const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3333}`
@@ -12,7 +11,7 @@ function formatar(produto) {
   return {
     ...produto,
     categoriaNome: produto.categoria?.nome,
-    gruposAdicionais: produto.gruposAdicionais?.map((pg) => pg.grupo) ?? [],
+    gruposAdicionais: produto.categoria ? [{ id: produto.categoria.id, nome: produto.categoria.nome, maximoSelecao: (p.categoria.opcoes || []).length, obrigatorio: false, opcoes: produto.categoria.opcoes || [] }] : [],
   }
 }
 

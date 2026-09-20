@@ -20,12 +20,31 @@ export function CartProvider({ children }) {
         produtoId: produto.id,
         nome: produto.nome,
         emoji: produto.emoji,
+        imagemUrl: produto.imagemUrl,
         precoUnitario: precoBase + precoAdicionais,
         adicionais: adicionaisSelecionados.map((a) => ({
           opcaoId: a.opcaoId,
           nome: a.nome,
           preco: Number(a.preco) || 0,
         })),
+        quantidade: Math.max(1, Number(quantidade) || 1),
+      },
+    ])
+  }
+
+  const adicionarCombo = (combo, quantidade = 1) => {
+    const precoBase = Number(combo.preco) || 0
+
+    setItens((prev) => [
+      ...prev,
+      {
+        chave: `combo-${combo.id}-${Date.now()}-${Math.random()}`,
+        comboId: combo.id,
+        nome: combo.nome,
+        emoji: combo.emoji,
+        imagemUrl: combo.imagemUrl,
+        precoUnitario: precoBase,
+        adicionais: [],
         quantidade: Math.max(1, Number(quantidade) || 1),
       },
     ])
@@ -62,7 +81,7 @@ export function CartProvider({ children }) {
   return (
     <CartContext.Provider
       value={{
-        itens, adicionarItem, alterarQuantidade, removerItem, limparCarrinho,
+        itens, adicionarItem, adicionarCombo, alterarQuantidade, removerItem, limparCarrinho,
         subtotal, quantidadeTotal, cupom, setCupom, modoEntrega, setModoEntrega,
         enderecoSelecionado, setEnderecoSelecionado, pagamento, setPagamento,
       }}
