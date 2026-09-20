@@ -3,6 +3,7 @@ import cors from 'cors'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import routes from './routes/index.js'
+import { tenantContext } from './middlewares/tenant.js'
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -18,7 +19,7 @@ export function createApp() {
   // cliente usa pra exibir a foto.
   app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
-  app.use('/api', routes)
+  app.use('/api', tenantContext, routes)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

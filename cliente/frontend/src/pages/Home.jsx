@@ -17,10 +17,11 @@ export default function Home() {
   const { adicionarCombo } = useCart()
 
   useEffect(() => {
-    Promise.all([buscarProdutos(), buscarCombos()])
-      .then(([produtosData, combosData]) => {
-        setProdutos(Array.isArray(produtosData) ? produtosData : [])
-        setCombos(Array.isArray(combosData) ? combosData : [])
+    Promise.allSettled([buscarProdutos(), buscarCombos()])
+      .then(([produtosResult, combosResult]) => {
+        if (produtosResult.status === 'fulfilled') setProdutos(Array.isArray(produtosResult.value) ? produtosResult.value : [])
+        else throw produtosResult.reason
+        if (combosResult.status === 'fulfilled') setCombos(Array.isArray(combosResult.value) ? combosResult.value : [])
       })
       .catch((err) => setError(err.message || 'Não foi possível carregar o cardápio.'))
       .finally(() => setLoading(false))
@@ -54,7 +55,7 @@ export default function Home() {
               const idProduto = p.id
               const src = getImagemUrl(p.imagemUrl)
               return (
-                <div key={idProduto} className="product-card" onClick={() => navigate(`/produto/${idProduto}`)}>
+                <div key={idProduto} className="product-card" onClick={() => { if (!p.controlaEstoque || Number(p.estoqueAtual) > 0) navigate(`/produto/${idProduto}`) }} style={{ opacity: p.controlaEstoque && Number(p.estoqueAtual) <= 0 ? 0.6 : 1 }}>
                   <div className="product-thumb" style={{ overflow: 'hidden' }}>
                     {src && !errosImagem[idProduto]
                       ? <img src={src} alt={p.nome} onError={() => setErrosImagem((prev) => ({ ...prev, [idProduto]: true }))} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -62,7 +63,7 @@ export default function Home() {
                   </div>
                   <div className="product-info">
                     <div className="name">{p.nome}</div>
-                    <div className="row"><span className="price">R$ {Number(p.preco).toFixed(2)}</span><span className="add-btn">+</span></div>
+                    <div className="row"><span className="price">R$ {Number(p.preco).toFixed(2)}</span>{p.controlaEstoque && Number(p.estoqueAtual) <= 0 ? <span className="pill pill-danger">Esgotado</span> : <span className="add-btn">+</span>}</div>
                   </div>
                 </div>
               )
@@ -91,7 +92,7 @@ export default function Home() {
                       </div>
                       <div className="row">
                         <span className="price">R$ {Number(combo.preco).toFixed(2)}</span>
-                        <button className="add-btn" onClick={(e) => { e.stopPropagation(); adicionarCombo(combo) }}>+</button>
+                        {combo.itens?.some((i) => i.produto?.controlaEstoque && Number(i.produto.estoqueAtual) < Number(i.quantidade || 1)) ? <span className="pill pill-danger">Esgotado</span> : <button className="add-btn" onClick={(e) => { e.stopPropagation(); adicionarCombo(combo) }}>+</button>}
                       </div>
                     </div>
                   </div>

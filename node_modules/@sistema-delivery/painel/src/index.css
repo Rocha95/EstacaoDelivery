@@ -436,3 +436,4 @@ table.data-table {
   .rail { grid-template-columns: 1fr 1fr; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
 }
+.pill-danger{background:#FDECEC;color:#B42318;border:1px solid #F5C2C0}

@@ -15,6 +15,10 @@ import Clientes from './pages/Clientes'
 import Configuracoes from './pages/Configuracoes'
 import Usuarios from './pages/Usuarios'
 import Relatorios from './pages/Relatorios'
+import Estoque from './pages/Estoque'
+import Cozinha from './pages/Cozinha'
+import Avaliacoes from './pages/Avaliacoes'
+import Estabelecimentos from './pages/Estabelecimentos'
 
 const PAGES = {
   '/': { title: 'Dashboard', subtitle: 'Visão geral do turno de hoje', Component: Dashboard },
@@ -29,6 +33,10 @@ const PAGES = {
   '/clientes': { title: 'Clientes', subtitle: 'Histórico e dados de quem já comprou com você', Component: Clientes },
   '/usuarios': { title: 'Usuários', subtitle: 'Quem tem acesso ao painel e com qual permissão', Component: Usuarios },
   '/configuracoes': { title: 'Configurações', subtitle: 'Dados do estabelecimento e preferências gerais', Component: Configuracoes },
+  '/cozinha': { title: 'KDS / Cozinha', subtitle: 'Operação da cozinha em tempo real', Component: Cozinha },
+  '/estoque': { title: 'Estoque', subtitle: 'Controle de saldo e disponibilidade', Component: Estoque },
+  '/avaliacoes': { title: 'Avaliações', subtitle: 'Feedback dos clientes', Component: Avaliacoes },
+  '/estabelecimentos': { title: 'Estabelecimentos', subtitle: 'Gestão multi-estabelecimento', Component: Estabelecimentos },
   '/relatorios': { title: 'Relatórios', subtitle: 'Desempenho de vendas e operação', Component: Relatorios },
 }
 

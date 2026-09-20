@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopNavBack from '../components/TopNavBack'
 import { useCart } from '../context/CartContext'
-import { calcularTaxaEntrega, criarPedido, validarCupom } from '../services/api'
+import { calcularTaxaEntrega, criarPedido, validarCupom, buscarConfiguracao } from '../services/api'
 
 export default function CheckoutPagamento() {
   const navigate = useNavigate()
@@ -14,6 +14,9 @@ export default function CheckoutPagamento() {
   const [finalizando, setFinalizando] = useState(false)
   const [agendar, setAgendar] = useState(false)
   const [agendadoPara, setAgendadoPara] = useState('')
+  const [pagamentoOnlinePix, setPagamentoOnlinePix] = useState(false)
+
+  useEffect(() => { buscarConfiguracao().then((c) => setPagamentoOnlinePix(Boolean(c?.pagamentoOnlinePix))).catch(() => {}) }, [])
 
   useEffect(() => {
     if (modoEntrega !== 'delivery' || !enderecoSelecionado) {
@@ -118,7 +121,7 @@ export default function CheckoutPagamento() {
 
         <div className="section-title">Forma de pagamento</div>
         <div className={`option-row ${pagamento === 'PIX' ? 'selected' : ''}`} onClick={() => setPagamento('PIX')}>
-          <div><div className="title">💠 Pix</div><div className="subtitle">Pagamento via Pix</div></div><div className="radio-dot" />
+          <div><div className="title">💠 Pix</div><div className="subtitle">{pagamentoOnlinePix ? 'Pagamento online via Pix' : 'Pix — confirmação manual pelo estabelecimento'}</div></div><div className="radio-dot" />
         </div>
         <div className={`option-row ${pagamento === 'DINHEIRO_ENTREGA' ? 'selected' : ''}`} onClick={() => setPagamento('DINHEIRO_ENTREGA')}>
           <div><div className="title">💵 Dinheiro na entrega</div><div className="subtitle">Pagamento ao receber</div></div><div className="radio-dot" />

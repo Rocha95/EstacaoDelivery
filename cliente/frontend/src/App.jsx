@@ -12,6 +12,7 @@ import Acompanhamento from './pages/Acompanhamento'
 import Historico from './pages/Historico'
 import Perfil from './pages/Perfil'
 import Enderecos from './pages/Enderecos'
+import Fidelidade from './pages/Fidelidade'
 import { useAuth } from './context/AuthContext'
 
 function RotaProtegida({ children }) {
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/historico" element={<RotaProtegida><Historico /></RotaProtegida>} />
           <Route path="/perfil" element={<RotaProtegida><Perfil /></RotaProtegida>} />
           <Route path="/enderecos" element={<RotaProtegida><Enderecos /></RotaProtegida>} />
+          <Route path="/fidelidade" element={<RotaProtegida><Fidelidade /></RotaProtegida>} />
         </Routes>
       </CartProvider>
     </AuthProvider>

@@ -12,6 +12,10 @@ import clientesRoutes from './clientes.routes.js'
 import pedidosRoutes from './pedidos.routes.js'
 import relatoriosRoutes from './relatorios.routes.js'
 import enderecoRoutes from './enderecos.routes.js'
+import estoqueRoutes from './estoque.routes.js'
+import cozinhaRoutes from './cozinha.routes.js'
+import avaliacoesRoutes from './avaliacoes.routes.js'
+import estabelecimentosRoutes from './estabelecimentos.routes.js'
 
 const router = Router()
 
@@ -30,5 +34,9 @@ router.use('/clientes', clientesRoutes)
 router.use('/pedidos', pedidosRoutes)
 router.use('/relatorios', relatoriosRoutes)
 router.use('/enderecos', enderecoRoutes)
+router.use('/estoque', estoqueRoutes)
+router.use('/cozinha', cozinhaRoutes)
+router.use('/avaliacoes', avaliacoesRoutes)
+router.use('/estabelecimentos', estabelecimentosRoutes)
 
 export default router

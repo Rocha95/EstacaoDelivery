@@ -10,9 +10,9 @@ function resolverImagemUrl(req) {
 
 async function encontrarOuCriarGrupo(nome) {
   const nomeFinal = (nome || '').trim() || 'Outros'
-  const existente = await prisma.grupoAdicional.findFirst({ where: { nome: nomeFinal } })
+  const existente = await prisma.grupoAdicional.findFirst({ where: { nome: nomeFinal, estabelecimentoId: undefined } })
   if (existente) return existente
-  return prisma.grupoAdicional.create({ data: { nome: nomeFinal } })
+  return prisma.grupoAdicional.create({ data: { nome: nomeFinal, estabelecimentoId: req.estabelecimentoId } })
 }
 
 function formatarFlat(opcao) {
@@ -31,6 +31,7 @@ function formatarFlat(opcao) {
 
 export async function listar(req, res) {
   const opcoes = await prisma.opcaoAdicional.findMany({
+    where: { estabelecimentoId: req.estabelecimentoId },
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   })
@@ -42,7 +43,7 @@ export async function criar(req, res) {
   if (!nome) throw new ApiError(400, 'Informe o nome do adicional.')
   if (!categoriaId) throw new ApiError(400, 'Selecione a categoria do adicional.')
 
-  const categoria = await prisma.categoria.findUnique({ where: { id: categoriaId } })
+  const categoria = await prisma.categoria.findUnique({ where: { id: categoriaId, estabelecimentoId: req.estabelecimentoId } })
   if (!categoria || !categoria.ativa) throw new ApiError(400, 'Categoria não encontrada ou inativa.')
 
   const preco = req.body.preco !== undefined ? Number(req.body.preco) : 0
@@ -50,6 +51,7 @@ export async function criar(req, res) {
 
   const opcao = await prisma.opcaoAdicional.create({
     data: {
+      estabelecimentoId: req.estabelecimentoId,
       nome: nome.trim(),
       preco: Number.isNaN(preco) ? 0 : preco,
       ativo,
@@ -63,6 +65,8 @@ export async function criar(req, res) {
 
 export async function atualizar(req, res) {
   const { id } = req.params
+  const existente = await prisma.opcaoAdicional.findFirst({ where: { id, estabelecimentoId: req.estabelecimentoId } })
+  if (!existente) throw new ApiError(404, 'Adicional não encontrado.')
   const data = {}
 
   if (req.body.nome !== undefined) data.nome = req.body.nome.trim()
@@ -74,7 +78,7 @@ export async function atualizar(req, res) {
   if (req.body.ativo !== undefined) data.ativo = req.body.ativo === 'true' || req.body.ativo === true
 
   if (req.body.categoriaId !== undefined) {
-    const categoria = await prisma.categoria.findUnique({ where: { id: req.body.categoriaId } })
+    const categoria = await prisma.categoria.findFirst({ where: { id: req.body.categoriaId, estabelecimentoId: req.estabelecimentoId } })
     if (!categoria || !categoria.ativa) throw new ApiError(400, 'Categoria não encontrada ou inativa.')
     data.categoriaId = categoria.id
   }
@@ -87,6 +91,8 @@ export async function atualizar(req, res) {
 }
 
 export async function removerFlat(req, res) {
+  const existente = await prisma.opcaoAdicional.findFirst({ where: { id: req.params.id, estabelecimentoId: req.estabelecimentoId } })
+  if (!existente) throw new ApiError(404, 'Adicional não encontrado.')
   await prisma.opcaoAdicional.delete({ where: { id: req.params.id } })
   res.status(204).send()
 }
@@ -95,6 +101,7 @@ export async function removerFlat(req, res) {
 
 export async function listarGrupos(req, res) {
   const grupos = await prisma.grupoAdicional.findMany({
+    where: { estabelecimentoId: req.estabelecimentoId },
     include: { opcoes: true },
     orderBy: { nome: 'asc' },
   })
@@ -107,6 +114,7 @@ export async function criarGrupo(req, res) {
 
   const grupo = await prisma.grupoAdicional.create({
     data: {
+      estabelecimentoId: req.estabelecimentoId,
       nome,
       maximoSelecao: maximoSelecao ?? 1,
       obrigatorio: obrigatorio ?? false,
@@ -139,7 +147,7 @@ export async function criarOpcao(req, res) {
   if (!nome) throw new ApiError(400, 'Informe o nome do adicional.')
 
   const opcao = await prisma.opcaoAdicional.create({
-    data: { nome, preco: preco ?? 0, grupoId },
+    data: { nome, preco: preco ?? 0, grupoId, estabelecimentoId: req.estabelecimentoId },
   })
   res.status(201).json(opcao)
 }

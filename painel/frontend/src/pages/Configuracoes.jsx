@@ -14,6 +14,8 @@ const FORM_PADRAO = {
   raioMaximoEntregaKm: '12',
   aceitaRetirada: true,
   aceitaDelivery: true,
+  pontosPorReal: '1',
+  whatsappAtivo: false,
 }
 
 export default function Configuracoes() {
@@ -40,6 +42,8 @@ export default function Configuracoes() {
         raioMaximoEntregaKm: String(data.raioMaximoEntregaKm ?? 12),
         aceitaRetirada: Boolean(data.aceitaRetirada),
         aceitaDelivery: Boolean(data.aceitaDelivery),
+        pontosPorReal: String(data.pontosPorReal ?? 1),
+        whatsappAtivo: Boolean(data.whatsappAtivo),
       }))
       .catch((err) => alert(err.message))
       .finally(() => setLoading(false))
@@ -67,6 +71,8 @@ export default function Configuracoes() {
           pedidoMinimo: Number(form.pedidoMinimo) || 0,
           tempoPreparoMedioMin: Number(form.tempoPreparoMedioMin) || 0,
           raioMaximoEntregaKm: Number(form.raioMaximoEntregaKm) || 0,
+          pontosPorReal: Number(form.pontosPorReal) || 1,
+          whatsappAtivo: Boolean(form.whatsappAtivo),
         }),
       })
       const data = await response.json().catch(() => ({}))
@@ -115,6 +121,9 @@ export default function Configuracoes() {
           <div className="field"><label>Tempo médio (min)</label><input type="number" min="0" value={form.tempoPreparoMedioMin} onChange={(e) => alterar('tempoPreparoMedioMin', e.target.value)} disabled={saving} /></div>
           <div className="field"><label>Raio máximo de entrega (km)</label><input type="number" step="0.1" min="0" value={form.raioMaximoEntregaKm} onChange={(e) => alterar('raioMaximoEntregaKm', e.target.value)} disabled={saving} /></div>
         </div>
+        <div className="form-grid" style={{ marginTop: 18 }}><div className="field"><label>Pontos de fidelidade por R$ 1</label><input type="number" min="0" step="0.1" value={form.pontosPorReal} onChange={(e) => alterar('pontosPorReal', e.target.value)} disabled={saving} /></div></div>
+        <div style={{ margin: '12px 0' }}><label><input type="checkbox" checked={form.whatsappAtivo} onChange={(e) => alterar('whatsappAtivo', e.target.checked)} disabled={saving} /> Ativar WhatsApp para notificações (requer Evolution API configurada no backend)</label></div>
+
         <div style={{ display: 'flex', gap: 24, margin: '18px 0 10px' }}>
           <label><input type="checkbox" checked={form.aceitaDelivery} onChange={(e) => alterar('aceitaDelivery', e.target.checked)} disabled={saving} /> Aceitar delivery</label>
           <label><input type="checkbox" checked={form.aceitaRetirada} onChange={(e) => alterar('aceitaRetirada', e.target.checked)} disabled={saving} /> Aceitar retirada</label>

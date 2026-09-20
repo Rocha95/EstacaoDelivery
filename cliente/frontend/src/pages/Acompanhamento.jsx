@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import TopNavBack from '../components/TopNavBack'
-import { buscarPedidoPorId } from '../services/api'
+import { buscarPedidoPorId, buscarAvaliacaoPedido, avaliarPedido } from '../services/api'
 
 const ETAPAS = [
   ['RECEBIDO', 'Pedido recebido', '🧾'],
@@ -14,11 +14,16 @@ export default function Acompanhamento() {
   const { id } = useParams()
   const [pedido, setPedido] = useState(null)
   const [erro, setErro] = useState('')
+  const [avaliacao, setAvaliacao] = useState(null)
+  const [nota, setNota] = useState(5)
+  const [comentario, setComentario] = useState('')
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false)
 
   useEffect(() => {
     let ativo = true
     const carregar = () => buscarPedidoPorId(id).then((p) => ativo && setPedido(p)).catch((e) => ativo && setErro(e.message))
     carregar()
+    buscarAvaliacaoPedido(id).then(setAvaliacao).catch(() => {})
     const timer = setInterval(carregar, 15000)
     return () => { ativo = false; clearInterval(timer) }
   }, [id])
@@ -46,6 +51,15 @@ export default function Acompanhamento() {
                 <div><div className="label">{label}</div></div>
               </div>
             ))}
+          </div>
+        )}
+
+        {pedido.status === 'FINALIZADO' && !avaliacao && (
+          <div className="card" style={{ marginBottom: 18 }}>
+            <div className="section-title">Avalie seu pedido</div>
+            <div style={{ display: 'flex', gap: 6, fontSize: 28, marginBottom: 10 }}>{[1,2,3,4,5].map((n) => <button key={n} type="button" onClick={() => setNota(n)} style={{ background: 'none', border: 0, cursor: 'pointer', opacity: n <= nota ? 1 : .3 }}>★</button>)}</div>
+            <textarea value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Conte como foi sua experiência (opcional)" style={{ width: '100%', minHeight: 80, marginBottom: 10 }} />
+            <button className="btn-block btn-primary" disabled={enviandoAvaliacao} onClick={async () => { try { setEnviandoAvaliacao(true); setAvaliacao(await avaliarPedido(id, { nota, comentario })) } catch (e) { setErro(e.message) } finally { setEnviandoAvaliacao(false) } }}>{enviandoAvaliacao ? 'Enviando...' : 'Enviar avaliação'}</button>
           </div>
         )}
 

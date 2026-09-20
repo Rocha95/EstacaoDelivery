@@ -12,7 +12,7 @@ export async function resumo(req, res) {
   const desde = inicioDoDia(new Date(Date.now() - dias * 24 * 60 * 60 * 1000))
 
   const pedidos = await prisma.pedido.findMany({
-    where: { criadoEm: { gte: desde } },
+    where: { estabelecimentoId: req.estabelecimentoId, criadoEm: { gte: desde } },
     select: { total: true, status: true },
   })
 
@@ -35,7 +35,7 @@ export async function vendasPorDia(req, res) {
   const desde = inicioDoDia(new Date(Date.now() - (dias - 1) * 24 * 60 * 60 * 1000))
 
   const pedidos = await prisma.pedido.findMany({
-    where: { criadoEm: { gte: desde }, status: { not: 'CANCELADO' } },
+    where: { estabelecimentoId: req.estabelecimentoId, criadoEm: { gte: desde }, status: { not: 'CANCELADO' } },
     select: { total: true, criadoEm: true },
   })
 
@@ -55,13 +55,8 @@ export async function vendasPorDia(req, res) {
 // Ranking "Mais vendidos" — soma quantidade por nome de item vendido.
 export async function maisVendidos(req, res) {
   const limite = Number(req.query.limite ?? 5)
-
-  const itens = await prisma.itemPedido.groupBy({
-    by: ['nome'],
-    _sum: { quantidade: true },
-    orderBy: { _sum: { quantidade: 'desc' } },
-    take: limite,
-  })
-
-  res.json(itens.map((i) => ({ nome: i.nome, quantidade: i._sum.quantidade })))
+  const itens = await prisma.itemPedido.findMany({ where: { pedido: { estabelecimentoId: req.estabelecimentoId, status: { not: 'CANCELADO' } } }, select: { nome: true, quantidade: true } })
+  const mapa = new Map()
+  for (const i of itens) mapa.set(i.nome, (mapa.get(i.nome) || 0) + i.quantidade)
+  res.json([...mapa.entries()].sort((a,b)=>b[1]-a[1]).slice(0, limite).map(([nome, quantidade])=>({nome, quantidade})))
 }

@@ -4,6 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import routes from './routes/index.js'
+import { tenantContext } from './middlewares/tenant.js'
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -38,7 +39,7 @@ export function createApp() {
   app.use('/uploads', express.static(pastaUploads, { fallthrough: true, maxAge: '1h' }))
   app.get('/health', (req, res) => res.json({ ok: true, servico: 'cliente', uploads: pastaUploads }))
 
-  app.use('/api', routes)
+  app.use('/api', tenantContext, routes)
   app.use(notFoundHandler)
   app.use(errorHandler)
 

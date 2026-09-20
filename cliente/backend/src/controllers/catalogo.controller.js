@@ -29,7 +29,7 @@ function imagemPublica(imagemUrl) {
 // Os adicionais seguem a mesma Categoria do produto; não existe grupo separado no cardápio.
 export async function listarCategorias(req, res) {
   const categorias = await prisma.categoria.findMany({
-    where: { ativa: true },
+    where: { ativa: true, estabelecimentoId: req.estabelecimentoId },
     orderBy: { ordem: 'asc' },
   })
   res.json(categorias)
@@ -38,7 +38,7 @@ export async function listarCategorias(req, res) {
 export async function listarProdutos(req, res) {
   const { categoriaId } = req.query
   const produtos = await prisma.produto.findMany({
-    where: { ativo: true, categoriaId: categoriaId || undefined, categoria: { ativa: true } },
+    where: { estabelecimentoId: req.estabelecimentoId, ativo: true, categoriaId: categoriaId || undefined, categoria: { ativa: true } },
     include: {
       categoria: { include: { adicionais: { where: { ativo: true }, orderBy: { nome: 'asc' } } } },
     },
@@ -55,7 +55,7 @@ export async function listarProdutos(req, res) {
 
 export async function obterProduto(req, res) {
   const produto = await prisma.produto.findFirst({
-    where: { id: req.params.id, ativo: true, categoria: { ativa: true } },
+    where: { id: req.params.id, estabelecimentoId: req.estabelecimentoId, ativo: true, categoria: { ativa: true } },
     include: {
       categoria: { include: { adicionais: { where: { ativo: true }, orderBy: { nome: 'asc' } } } },
     },
@@ -72,10 +72,11 @@ export async function obterProduto(req, res) {
 
 export async function listarCombos(req, res) {
   const combos = await prisma.combo.findMany({
-    where: { ativo: true },
+    where: { ativo: true, estabelecimentoId: req.estabelecimentoId },
     include: { itens: { include: { produto: true } } },
   })
-  res.json(combos.map((c) => ({
+  const disponiveis = combos.filter((c) => (c.itens || []).every((item) => !item.produto?.controlaEstoque || Number(item.produto.estoqueAtual) >= Number(item.quantidade || 1)))
+  res.json(disponiveis.map((c) => ({
     ...c,
     imagemUrl: imagemPublica(c.imagemUrl),
     itens: (c.itens || []).map((item) => ({

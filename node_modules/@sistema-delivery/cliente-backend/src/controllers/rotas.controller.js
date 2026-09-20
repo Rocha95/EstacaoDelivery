@@ -2,8 +2,8 @@ import { prisma } from '../lib/prisma.js'
 import { ApiError } from '../utils/ApiError.js'
 import { geocodificarEndereco, calcularDistanciaRotaKm } from '../utils/geocoding.js'
 
-async function obterEstabelecimento() {
-  const config = await prisma.configuracao.findUnique({ where: { id: 'default' } })
+async function obterEstabelecimento(estabelecimentoId) {
+  const config = await prisma.configuracao.findUnique({ where: { id: estabelecimentoId === 'default' ? 'default' : `config-${estabelecimentoId}` } })
   if (!config) throw new ApiError(404, 'Configuração do estabelecimento não encontrada.')
 
   const revalidar = process.env.REVALIDAR_COORDENADAS_ESTABELECIMENTO !== 'false'
@@ -20,7 +20,7 @@ async function obterEstabelecimento() {
     })
     latitude = localizado.latitude
     longitude = localizado.longitude
-    await prisma.configuracao.update({ where: { id: 'default' }, data: { latitude, longitude } })
+    await prisma.configuracao.update({ where: { id: estabelecimentoId === 'default' ? 'default' : `config-${estabelecimentoId}` }, data: { latitude, longitude } })
   }
 
   return { latitude: Number(latitude), longitude: Number(longitude), config }
@@ -38,7 +38,7 @@ export async function calcularParaEndereco(req, res) {
     await prisma.endereco.update({ where: { id: endereco.id }, data: { latitude, longitude } })
   }
 
-  const estabelecimento = await obterEstabelecimento()
+  const estabelecimento = await obterEstabelecimento(req.estabelecimentoId)
   const distanciaKm = await calcularDistanciaRotaKm(estabelecimento, { latitude, longitude })
   res.json({
     distanciaKm,

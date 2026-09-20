@@ -8,6 +8,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/', icon: '◆', label: 'Dashboard', end: true },
       { to: '/pedidos', icon: '🧾', label: 'Pedidos' },
+      { to: '/cozinha', icon: '👨‍🍳', label: 'KDS / Cozinha' },
       { to: '/relatorios', icon: '📊', label: 'Relatórios' },
     ],
   },
@@ -18,6 +19,7 @@ const NAV_GROUPS = [
       { to: '/categorias', icon: '🗂', label: 'Categorias' },
       { to: '/adicionais', icon: '➕', label: 'Adicionais' },
       { to: '/combos', icon: '🎁', label: 'Combos' },
+      { to: '/estoque', icon: '📦', label: 'Estoque' },
     ],
   },
   {
@@ -27,6 +29,7 @@ const NAV_GROUPS = [
       { to: '/cupons', icon: '🏷', label: 'Cupons' },
       { to: '/taxas-entrega', icon: '🛵', label: 'Taxas de entrega' },
       { to: '/clientes', icon: '👥', label: 'Clientes' },
+      { to: '/avaliacoes', icon: '⭐', label: 'Avaliações' },
     ],
   },
   {
@@ -34,6 +37,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/usuarios', icon: '🔐', label: 'Usuários' },
       { to: '/configuracoes', icon: '⚙️', label: 'Configurações' },
+      { to: '/estabelecimentos', icon: '🏪', label: 'Estabelecimentos' },
     ],
   },
 ]

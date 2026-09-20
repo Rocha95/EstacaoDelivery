@@ -33,7 +33,7 @@ async function obterCoordenadasEstabelecimento(config) {
     const coordenadas = { latitude: localizado.latitude, longitude: localizado.longitude }
     cacheGeocodificacao.set(`estabelecimento:${enderecoTexto}`, { timestamp: agora, coordenadas })
     await prisma.configuracao.update({
-      where: { id: 'default' },
+      where: { id: configId(config.estabelecimentoId || 'default') },
       data: { latitude: coordenadas.latitude, longitude: coordenadas.longitude },
     })
     return coordenadas
@@ -87,14 +87,16 @@ async function obterDistanciaDoEndereco(endereco, config) {
   return distanciaKm
 }
 
+function configId(id) { return id === 'default' ? 'default' : `config-${id}` }
+
 export async function calcular(req, res) {
   const enderecoId = req.query.enderecoId
   if (!enderecoId) throw new ApiError(400, 'Informe o endereço de entrega.')
 
   const [endereco, config, faixas] = await Promise.all([
     prisma.endereco.findFirst({ where: { id: enderecoId, usuarioId: req.usuario.id } }),
-    prisma.configuracao.findUnique({ where: { id: 'default' } }),
-    prisma.faixaTaxaEntrega.findMany({ orderBy: { ateKm: 'asc' } }),
+    prisma.configuracao.findUnique({ where: { id: configId(req.estabelecimentoId) } }),
+    prisma.faixaTaxaEntrega.findMany({ where: { estabelecimentoId: req.estabelecimentoId }, orderBy: { ateKm: 'asc' } }),
   ])
 
   if (!endereco) throw new ApiError(404, 'Endereço de entrega não encontrado.')

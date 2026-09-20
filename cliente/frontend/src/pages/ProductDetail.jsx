@@ -112,7 +112,7 @@ export default function ProductDetail() {
       </div>
 
       <div style={{ padding: '12px 18px calc(16px + env(safe-area-inset-bottom))' }}>
-        <button className="btn-block btn-primary" onClick={confirmar}>Adicionar · R$ {total.toFixed(2)}</button>
+        <button className="btn-block btn-primary" onClick={confirmar} disabled={produto.controlaEstoque && Number(produto.estoqueAtual) <= 0}>{produto.controlaEstoque && Number(produto.estoqueAtual) <= 0 ? 'Produto esgotado' : `Adicionar · R$ ${total.toFixed(2)}`}</button>
       </div>
     </div>
   )

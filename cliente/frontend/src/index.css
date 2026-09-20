@@ -390,3 +390,4 @@ input, select, textarea { font-family: inherit; }
   font-size: 14px;
 }
 .top-nav-back h1 { font-size: 15px; font-weight: 800; margin: 0; }
+.pill-danger{background:#FDECEC;color:#B42318;border:1px solid #F5C2C0}

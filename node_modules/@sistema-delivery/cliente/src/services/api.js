@@ -31,6 +31,7 @@ async function request(endpoint, options = {}) {
     Accept: 'application/json',
     ...(options.body !== undefined && { 'Content-Type': 'application/json' }),
     ...(token && { Authorization: `Bearer ${token}` }),
+    ...((localStorage.getItem('estabelecimentoId') || import.meta.env.VITE_ESTABELECIMENTO_ID) && { 'X-Estabelecimento-Id': localStorage.getItem('estabelecimentoId') || import.meta.env.VITE_ESTABELECIMENTO_ID }),
     ...(options.headers || {}),
   }
 
@@ -99,3 +100,9 @@ export const criarEndereco = (dadosEndereco) =>
   request('/api/enderecos', { method: 'POST', body: JSON.stringify(dadosEndereco) })
 export const deletarEndereco = (id) =>
   request(`/api/enderecos/${encodeURIComponent(id)}`, { method: 'DELETE' })
+
+export const consultarPagamento = (pedidoId) => request(`/api/pagamentos/${encodeURIComponent(pedidoId)}`)
+export const buscarFidelidade = () => request('/api/fidelidade')
+export const buscarHistoricoFidelidade = () => request('/api/fidelidade/historico')
+export const buscarAvaliacaoPedido = (pedidoId) => request(`/api/avaliacoes/pedido/${encodeURIComponent(pedidoId)}`)
+export const avaliarPedido = (pedidoId, dados) => request(`/api/avaliacoes/pedido/${encodeURIComponent(pedidoId)}`, { method: 'POST', body: JSON.stringify(dados) })

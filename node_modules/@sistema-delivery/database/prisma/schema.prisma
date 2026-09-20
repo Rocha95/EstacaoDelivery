@@ -26,6 +26,29 @@ enum PapelEquipe {
   ATENDIMENTO
 }
 
+model Estabelecimento {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  nome      String
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+
+  configuracao Configuracao?
+  categorias Categoria[]
+  produtos Produto[]
+  gruposAdicionais GrupoAdicional[]
+  adicionais OpcaoAdicional[]
+  combos Combo[]
+  horarios HorarioFuncionamento[]
+  cupons Cupom[]
+  faixasEntrega FaixaTaxaEntrega[]
+  pedidos Pedido[]
+  equipe Usuario[]
+  fidelidades Fidelidade[]
+
+  @@map("estabelecimentos")
+}
+
 model Usuario {
   id        String       @id @default(uuid())
   nome      String
@@ -36,9 +59,13 @@ model Usuario {
   papel     PapelEquipe? // só preenchido quando tipo = EQUIPE
   ativo     Boolean      @default(true)
   criadoEm  DateTime     @default(now())
+  estabelecimentoId String?
+  estabelecimento Estabelecimento? @relation(fields: [estabelecimentoId], references: [id])
 
   enderecos Endereco[]
   pedidos   Pedido[]
+  fidelidades Fidelidade[]
+  avaliacoes Avaliacao[]
 
   @@map("usuarios")
 }
@@ -71,6 +98,8 @@ model Endereco {
 
 model Categoria {
   id    String  @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   nome  String
   ordem Int     @default(0)
   ativa Boolean @default(true)
@@ -80,15 +109,19 @@ model Categoria {
 
   @@map("categorias")
 }
-
 model Produto {
   id                    String   @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   nome                  String
   descricao             String?
   preco                 Decimal  @db.Decimal(10, 2)
   emoji                 String?
   imagemUrl             String?
   ativo                 Boolean  @default(true)
+  controlaEstoque       Boolean  @default(false)
+  estoqueAtual          Int      @default(0)
+  estoqueMinimo         Int      @default(0)
   // Janela própria de disponibilidade (ex: só no almoço). Nula = segue o
   // horário geral de funcionamento (HorarioFuncionamento).
   disponibilidadeInicio String? // formato "HH:MM"
@@ -99,6 +132,7 @@ model Produto {
 
   gruposAdicionais ProdutoGrupoAdicional[]
   itensPedido      ItemPedido[]
+  movimentosEstoque EstoqueMovimento[]
   combosItens      ComboItem[]
 
   criadoEm     DateTime @default(now())
@@ -111,6 +145,8 @@ model Produto {
 // pode ser reaproveitado por vários produtos — por isso a tabela de junção.
 model GrupoAdicional {
   id            String  @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   nome          String
   maximoSelecao Int     @default(1)
   obrigatorio   Boolean @default(false)
@@ -120,9 +156,10 @@ model GrupoAdicional {
 
   @@map("grupos_adicionais")
 }
-
 model OpcaoAdicional {
   id        String  @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   nome      String
   preco     Decimal @db.Decimal(10, 2) @default(0)
   ativo     Boolean @default(true)
@@ -141,7 +178,6 @@ model OpcaoAdicional {
 
   @@map("opcoes_adicionais")
 }
-
 model ProdutoGrupoAdicional {
   produto   Produto        @relation(fields: [produtoId], references: [id])
   produtoId String
@@ -154,6 +190,8 @@ model ProdutoGrupoAdicional {
 
 model Combo {
   id        String  @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   nome      String
   preco     Decimal @db.Decimal(10, 2)
   imagemUrl String?
@@ -164,7 +202,6 @@ model Combo {
 
   @@map("combos")
 }
-
 model ComboItem {
   combo      Combo   @relation(fields: [comboId], references: [id])
   comboId    String
@@ -182,12 +219,14 @@ model ComboItem {
 
 model HorarioFuncionamento {
   id        String  @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   diaSemana Int // 0 = domingo ... 6 = sábado
   ativo     Boolean @default(true)
   abre      String // "HH:MM"
   fecha     String // "HH:MM"
 
-  @@unique([diaSemana])
+  @@unique([estabelecimentoId, diaSemana])
   @@map("horarios_funcionamento")
 }
 
@@ -196,10 +235,11 @@ enum TipoCupom {
   VALOR_FIXO
   FRETE_GRATIS
 }
-
 model Cupom {
   id           String    @id @default(uuid())
-  codigo       String    @unique
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
+  codigo       String
   tipo         TipoCupom
   valor        Decimal   @db.Decimal(10, 2) @default(0) // ignorado se FRETE_GRATIS
   pedidoMinimo Decimal   @db.Decimal(10, 2) @default(0)
@@ -209,6 +249,7 @@ model Cupom {
 
   pedidos Pedido[]
 
+  @@unique([estabelecimentoId, codigo])
   @@map("cupons")
 }
 
@@ -216,15 +257,18 @@ model Cupom {
 // endereço do estabelecimento (Configuracao.endereco / latitude / longitude).
 model FaixaTaxaEntrega {
   id    String  @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   ateKm Float // limite superior da faixa; a última faixa cobre "acima de"
   valor Decimal @db.Decimal(10, 2)
   ordem Int     @default(0)
 
   @@map("faixas_taxa_entrega")
 }
-
 model Configuracao {
   id                   String  @id @default("default")
+  estabelecimentoId String @unique @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   nomeEstabelecimento  String
   telefone             String?
   endereco             String
@@ -241,8 +285,118 @@ model Configuracao {
   raioMaximoEntregaKm  Float   @default(12)
   aceitaDelivery       Boolean @default(true)
   aceitaRetirada       Boolean @default(true)
+  pontosPorReal        Float   @default(1)
+  whatsappAtivo        Boolean @default(false)
 
   @@map("configuracoes")
+}
+
+// ---------------------------------------------------------------------------
+// Pagamentos, estoque, fidelidade e avaliações
+// ---------------------------------------------------------------------------
+
+enum StatusPagamento {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  CANCELADO
+  EXPIRADO
+}
+
+enum TipoMovimentoEstoque {
+  ENTRADA
+  SAIDA
+  AJUSTE
+  VENDA
+  ESTORNO
+}
+
+enum TipoMovimentoFidelidade {
+  CREDITO
+  DEBITO
+  AJUSTE
+}
+model Pagamento {
+  id             String           @id @default(uuid())
+  pedido         Pedido           @relation(fields: [pedidoId], references: [id])
+  pedidoId       String           @unique
+  provedor       String
+  externoId      String?
+  status         StatusPagamento  @default(PENDENTE)
+  valor          Decimal          @db.Decimal(10, 2)
+  qrCode         String?
+  qrCodeBase64   String?
+  copiaECola     String?
+  ticketUrl      String?
+  criadoEm       DateTime         @default(now())
+  atualizadoEm   DateTime         @updatedAt
+
+  @@map("pagamentos")
+}
+
+model EstoqueMovimento {
+  id              String               @id @default(uuid())
+  produto         Produto              @relation(fields: [produtoId], references: [id])
+  produtoId       String
+  tipo            TipoMovimentoEstoque
+  quantidade      Int
+  saldoAnterior   Int
+  saldoPosterior  Int
+  motivo          String?
+  pedido          Pedido?              @relation(fields: [pedidoId], references: [id])
+  pedidoId        String?
+  criadoEm        DateTime             @default(now())
+
+  @@index([produtoId, criadoEm])
+  @@map("estoque_movimentos")
+}
+
+model Fidelidade {
+  id                String   @id @default(uuid())
+  estabelecimentoId String
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
+  usuario           Usuario @relation(fields: [usuarioId], references: [id])
+  usuarioId         String
+  pontosSaldo       Int      @default(0)
+  pontosAcumulados  Int      @default(0)
+  criadoEm          DateTime @default(now())
+  atualizadoEm      DateTime @updatedAt
+
+  movimentos MovimentoFidelidade[]
+
+  @@unique([usuarioId, estabelecimentoId])
+  @@map("fidelidades")
+}
+
+model MovimentoFidelidade {
+  id           String                    @id @default(uuid())
+  fidelidade   Fidelidade                @relation(fields: [fidelidadeId], references: [id])
+  fidelidadeId String
+  tipo         TipoMovimentoFidelidade
+  pontos       Int
+  descricao    String
+  pedido       Pedido?                   @relation(fields: [pedidoId], references: [id])
+  pedidoId     String?
+  criadoEm     DateTime                  @default(now())
+
+  @@index([fidelidadeId, criadoEm])
+  @@map("movimentos_fidelidade")
+}
+
+model Avaliacao {
+  id          String   @id @default(uuid())
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id])
+  pedidoId    String   @unique
+  cliente     Usuario  @relation(fields: [clienteId], references: [id])
+  clienteId   String
+  nota        Int
+  comentario  String?
+  resposta    String?
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([clienteId, criadoEm])
+  @@map("avaliacoes")
 }
 
 // ---------------------------------------------------------------------------
@@ -270,6 +424,8 @@ enum StatusPedido {
 
 model Pedido {
   id             String         @id @default(uuid())
+  estabelecimentoId String @default("default")
+  estabelecimento Estabelecimento @relation(fields: [estabelecimentoId], references: [id])
   numero         Int            @unique @default(autoincrement())
   cliente        Usuario        @relation(fields: [clienteId], references: [id])
   clienteId      String
@@ -278,6 +434,8 @@ model Pedido {
   enderecoId     String?
   formaPagamento FormaPagamento
   status         StatusPedido   @default(RECEBIDO)
+  pagamentoStatus StatusPagamento @default(PENDENTE)
+  pagamento      Pagamento?
 
   subtotal    Decimal @db.Decimal(10, 2)
   taxaEntrega Decimal @db.Decimal(10, 2) @default(0)
@@ -290,6 +448,9 @@ model Pedido {
   agendadoPara DateTime?
 
   itens ItemPedido[]
+  movimentosEstoque EstoqueMovimento[]
+  movimentosFidelidade MovimentoFidelidade[]
+  avaliacao Avaliacao?
 
   criadoEm      DateTime  @default(now())
   producaoEm    DateTime?

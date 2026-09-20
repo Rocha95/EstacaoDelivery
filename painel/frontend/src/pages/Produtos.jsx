@@ -21,6 +21,9 @@ export default function Produtos() {
     disponibilidadeFim: '23:00',
     imagemUrl: '',
     arquivoImagem: null,
+    controlaEstoque: false,
+    estoqueAtual: '0',
+    estoqueMinimo: '0',
   }
 
   const [novo, setNovo] = useState(initialFormState)
@@ -89,6 +92,9 @@ export default function Produtos() {
       disponibilidadeFim: p.disponibilidadeFim || '23:00',
       imagemUrl: typeof foto === 'string' && foto.startsWith('http') ? foto : '',
       arquivoImagem: null,
+      controlaEstoque: Boolean(p.controlaEstoque),
+      estoqueAtual: String(p.estoqueAtual ?? 0),
+      estoqueMinimo: String(p.estoqueMinimo ?? 0),
     })
 
     setImagePreview(foto)
@@ -144,6 +150,9 @@ export default function Produtos() {
       formData.append('preco', parseFloat(novo.preco) || 0)
       formData.append('disponibilidadeInicio', novo.disponibilidadeInicio)
       formData.append('disponibilidadeFim', novo.disponibilidadeFim)
+      formData.append('controlaEstoque', String(novo.controlaEstoque))
+      formData.append('estoqueAtual', String(novo.estoqueAtual || 0))
+      formData.append('estoqueMinimo', String(novo.estoqueMinimo || 0))
 
       if (!editandoId) {
         formData.append('ativo', 'true')
@@ -303,6 +312,12 @@ export default function Produtos() {
             </div>
 
             <div className="field">
+              <label>Estoque</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 400 }}><input type="checkbox" checked={Boolean(novo.controlaEstoque)} onChange={(e) => setNovo({ ...novo, controlaEstoque: e.target.checked })} /> Controlar estoque e esgotar automaticamente</label>
+              {novo.controlaEstoque && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input type="number" min="0" value={novo.estoqueAtual} onChange={(e) => setNovo({ ...novo, estoqueAtual: e.target.value })} placeholder="Saldo" /><input type="number" min="0" value={novo.estoqueMinimo} onChange={(e) => setNovo({ ...novo, estoqueMinimo: e.target.value })} placeholder="Estoque mínimo" /></div>}
+            </div>
+
+            <div className="field">
               <label>Disponível de / até</label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
@@ -404,6 +419,7 @@ export default function Produtos() {
               <th>Produto</th>
               <th>Categoria</th>
               <th>Preço</th>
+              <th>Estoque</th>
               <th>Disponibilidade</th>
               <th>Adicionais vinculados</th>
               <th>Ativo p/ delivery</th>
@@ -454,6 +470,7 @@ export default function Produtos() {
                   </td>
                   <td>{formatCategoria(p.categoria)}</td>
                   <td className="money">R$ {precoNum.toFixed(2)}</td>
+                  <td>{p.controlaEstoque ? <span className={Number(p.estoqueAtual) <= Number(p.estoqueMinimo) ? 'pill pill-danger' : 'pill pill-basil'}>{p.estoqueAtual} un.</span> : <span className="muted">Não controlado</span>}</td>
                   <td>
                     {p.disponibilidadeInicio || '11:00'} – {p.disponibilidadeFim || '23:00'}
                   </td>
@@ -481,7 +498,7 @@ export default function Produtos() {
             })}
             {produtosFiltrados.length === 0 && (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <div className="empty-state">
                     {produtos.length === 0
                       ? 'Nenhum produto cadastrado no banco de dados.'

@@ -5,7 +5,7 @@ export async function validar(req, res) {
   const codigo = String(req.body.codigo ?? '').trim().toUpperCase()
   if (!codigo) throw new ApiError(400, 'Informe o código do cupom.')
 
-  const cupom = await prisma.cupom.findUnique({ where: { codigo } })
+  const cupom = await prisma.cupom.findFirst({ where: { codigo, estabelecimentoId: req.estabelecimentoId } })
   if (!cupom || !cupom.ativo) throw new ApiError(404, 'Cupom inválido ou inativo.')
   if (cupom.validoAte && new Date() > cupom.validoAte) throw new ApiError(400, 'Cupom expirado.')
 

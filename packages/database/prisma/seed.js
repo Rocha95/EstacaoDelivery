@@ -14,6 +14,11 @@ const SENHA_PLACEHOLDER = 'trocar-por-hash-bcrypt'
 
 async function main() {
   console.log('Zerando dados antigos...')
+  await prisma.avaliacao.deleteMany()
+  await prisma.movimentoFidelidade.deleteMany()
+  await prisma.fidelidade.deleteMany()
+  await prisma.estoqueMovimento.deleteMany()
+  await prisma.pagamento.deleteMany()
   await prisma.itemPedidoAdicional.deleteMany()
   await prisma.itemPedido.deleteMany()
   await prisma.pedido.deleteMany()
@@ -30,11 +35,15 @@ async function main() {
   await prisma.faixaTaxaEntrega.deleteMany()
   await prisma.horarioFuncionamento.deleteMany()
   await prisma.configuracao.deleteMany()
+  await prisma.estabelecimento.deleteMany()
+
+  await prisma.estabelecimento.create({ data: { id: 'default', slug: 'default', nome: 'Estação Delivery' } })
 
   console.log('Configuração geral...')
   await prisma.configuracao.create({
     data: {
       id: 'default',
+      estabelecimentoId: 'default',
       nomeEstabelecimento: 'Estação Delivery',
       telefone: '(15) 99000-1122',
       endereco: 'Av. Presidente Vargas, 450 – Votorantim/SP',
@@ -62,25 +71,25 @@ async function main() {
     { diaSemana: 6, ativo: true, abre: '11:00', fecha: '23:59' }, // Sábado
     { diaSemana: 0, ativo: false, abre: '17:00', fecha: '22:00' }, // Domingo
   ]
-  await prisma.horarioFuncionamento.createMany({ data: dias })
+  await prisma.horarioFuncionamento.createMany({ data: dias.map(d => ({ ...d, estabelecimentoId: 'default' })) })
 
   console.log('Faixas de taxa de entrega...')
   await prisma.faixaTaxaEntrega.createMany({
     data: [
-      { ateKm: 2, valor: 5.0, ordem: 1 },
-      { ateKm: 4, valor: 8.0, ordem: 2 },
-      { ateKm: 6, valor: 12.0, ordem: 3 },
-      { ateKm: 9, valor: 17.0, ordem: 4 },
-      { ateKm: 999, valor: 22.0, ordem: 5 },
+      { estabelecimentoId: 'default', ateKm: 2, valor: 5.0, ordem: 1 },
+      { estabelecimentoId: 'default', ateKm: 4, valor: 8.0, ordem: 2 },
+      { estabelecimentoId: 'default', ateKm: 6, valor: 12.0, ordem: 3 },
+      { estabelecimentoId: 'default', ateKm: 9, valor: 17.0, ordem: 4 },
+      { estabelecimentoId: 'default', ateKm: 999, valor: 22.0, ordem: 5 },
     ],
   })
 
   console.log('Cupons...')
   await prisma.cupom.createMany({
     data: [
-      { codigo: 'BEMVINDO10', tipo: 'PERCENTUAL', valor: 10, pedidoMinimo: 30, validoAte: new Date('2026-12-31'), ativo: true },
-      { codigo: 'FRETEGRATIS', tipo: 'FRETE_GRATIS', valor: 0, pedidoMinimo: 50, validoAte: new Date('2026-10-31'), ativo: true },
-      { codigo: 'BLACKFRIDAY', tipo: 'VALOR_FIXO', valor: 15, pedidoMinimo: 60, validoAte: new Date('2025-11-30'), ativo: false },
+      { estabelecimentoId: 'default', codigo: 'BEMVINDO10', tipo: 'PERCENTUAL', valor: 10, pedidoMinimo: 30, validoAte: new Date('2026-12-31'), ativo: true },
+      { estabelecimentoId: 'default', codigo: 'FRETEGRATIS', tipo: 'FRETE_GRATIS', valor: 0, pedidoMinimo: 50, validoAte: new Date('2026-10-31'), ativo: true },
+      { estabelecimentoId: 'default', codigo: 'BLACKFRIDAY', tipo: 'VALOR_FIXO', valor: 15, pedidoMinimo: 60, validoAte: new Date('2025-11-30'), ativo: false },
     ],
   })
 
@@ -94,34 +103,37 @@ async function main() {
   ]
   const categorias = {}
   for (const c of categoriasData) {
-    categorias[c.nome] = await prisma.categoria.create({ data: c })
+    categorias[c.nome] = await prisma.categoria.create({ data: { ...c, estabelecimentoId: 'default' } })
   }
 
   const grupoLanche = await prisma.grupoAdicional.create({
     data: {
+      estabelecimentoId: 'default',
       nome: 'Adicionais de lanche',
       maximoSelecao: 3,
       opcoes: {
         create: [
-          { nome: 'Bacon extra', preco: 6.0 },
-          { nome: 'Queijo cheddar extra', preco: 4.5 },
-          { nome: 'Ovo frito', preco: 3.5 },
+          { nome: 'Bacon extra', preco: 6.0, estabelecimentoId: 'default' },
+          { nome: 'Queijo cheddar extra', preco: 4.5, estabelecimentoId: 'default' },
+          { nome: 'Ovo frito', preco: 3.5, estabelecimentoId: 'default' },
         ],
       },
     },
   })
   const grupoObservacoes = await prisma.grupoAdicional.create({
     data: {
+      estabelecimentoId: 'default',
       nome: 'Observações',
       maximoSelecao: 2,
-      opcoes: { create: [{ nome: 'Sem cebola', preco: 0 }, { nome: 'Sem picles', preco: 0 }] },
+      opcoes: { create: [{ nome: 'Sem cebola', preco: 0, estabelecimentoId: 'default' }, { nome: 'Sem picles', preco: 0, estabelecimentoId: 'default' }] },
     },
   })
   const grupoBorda = await prisma.grupoAdicional.create({
     data: {
+      estabelecimentoId: 'default',
       nome: 'Borda',
       maximoSelecao: 1,
-      opcoes: { create: [{ nome: 'Borda recheada catupiry', preco: 9.0 }] },
+      opcoes: { create: [{ nome: 'Borda recheada catupiry', preco: 9.0, estabelecimentoId: 'default' }] },
     },
   })
 
@@ -142,6 +154,7 @@ async function main() {
   for (const p of produtosData) {
     produtos[p.nome] = await prisma.produto.create({
       data: {
+        estabelecimentoId: 'default',
         nome: p.nome,
         descricao: p.descricao,
         preco: p.preco,
@@ -158,6 +171,7 @@ async function main() {
   console.log('Combos...')
   await prisma.combo.create({
     data: {
+      estabelecimentoId: 'default',
       nome: 'Combo Smash Duplo',
       preco: 42.9,
       itens: { create: [{ produtoId: produtos['Combo Smash Duplo'].id, quantidade: 1 }] },
@@ -165,6 +179,7 @@ async function main() {
   })
   await prisma.combo.create({
     data: {
+      estabelecimentoId: 'default',
       nome: 'Combo Pizza + Refri',
       preco: 64.9,
       itens: {
@@ -179,10 +194,10 @@ async function main() {
   console.log('Usuários (equipe + clientes)...')
   await prisma.usuario.createMany({
     data: [
-      { nome: 'Fernando (dono)', email: 'fernando@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'ADMINISTRADOR' },
-      { nome: 'Patrícia Lima', email: 'patricia@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'GERENTE' },
-      { nome: 'Kauê Silva', email: 'kaue@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'COZINHA' },
-      { nome: 'Yasmin Rocha', email: 'yasmin@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'ATENDIMENTO', ativo: false },
+      { estabelecimentoId: 'default', nome: 'Fernando (dono)', email: 'fernando@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'ADMINISTRADOR' },
+      { estabelecimentoId: 'default', nome: 'Patrícia Lima', email: 'patricia@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'GERENTE' },
+      { estabelecimentoId: 'default', nome: 'Kauê Silva', email: 'kaue@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'COZINHA' },
+      { estabelecimentoId: 'default', nome: 'Yasmin Rocha', email: 'yasmin@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'ATENDIMENTO', ativo: false },
     ],
   })
 
@@ -217,6 +232,7 @@ async function main() {
   const enderecoMarina = await prisma.endereco.findFirstOrThrow({ where: { usuarioId: marina.id } })
   await prisma.pedido.create({
     data: {
+      estabelecimentoId: 'default',
       clienteId: marina.id,
       tipoEntrega: 'DELIVERY',
       enderecoId: enderecoMarina.id,

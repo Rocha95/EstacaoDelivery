@@ -57,8 +57,11 @@ export async function geocodificarEstabelecimento(enderecoOuConfig) {
   }
 }
 
+const bool = (v) => v === true || v === 'true' || v === 1 || v === '1'
+
 const DADOS_PADRAO = {
   id: 'default',
+  estabelecimentoId: 'default',
   nomeEstabelecimento: 'Meu Estabelecimento',
   endereco: '',
   enderecoRua: null,
@@ -70,7 +73,7 @@ const DADOS_PADRAO = {
 }
 
 export async function obter(req, res) {
-  const config = await prisma.configuracao.upsert({ where: { id: 'default' }, update: {}, create: DADOS_PADRAO })
+  const config = await prisma.configuracao.upsert({ where: { id: req.estabelecimentoId === 'default' ? 'default' : `config-${req.estabelecimentoId}` }, update: {}, create: { ...DADOS_PADRAO, id: req.estabelecimentoId === 'default' ? 'default' : `config-${req.estabelecimentoId}`, estabelecimentoId: req.estabelecimentoId, nomeEstabelecimento: req.estabelecimento.nome } })
   res.json(config)
 }
 
@@ -79,7 +82,7 @@ export async function atualizar(req, res) {
     nomeEstabelecimento, telefone,
     endereco, enderecoRua, enderecoNumero, enderecoBairro, enderecoCidade, enderecoEstado, enderecoCep,
     latitude, longitude, pedidoMinimo, tempoPreparoMedioMin, raioMaximoEntregaKm,
-    aceitaDelivery, aceitaRetirada,
+    aceitaDelivery, aceitaRetirada, pontosPorReal, whatsappAtivo,
   } = req.body
 
   const possuiCamposEstruturados = [enderecoRua, enderecoNumero, enderecoBairro, enderecoCidade, enderecoEstado, enderecoCep].some((v) => v !== undefined)
@@ -128,7 +131,7 @@ export async function atualizar(req, res) {
   } : enderecoAtualizado !== undefined ? { endereco: enderecoAtualizado } : {}
 
   const config = await prisma.configuracao.upsert({
-    where: { id: 'default' },
+    where: { id: req.estabelecimentoId === 'default' ? 'default' : `config-${req.estabelecimentoId}` },
     update: {
       ...(nomeEstabelecimento !== undefined && { nomeEstabelecimento: String(nomeEstabelecimento).trim() }),
       ...(telefone !== undefined && { telefone: String(telefone).trim() || null }),
@@ -137,11 +140,15 @@ export async function atualizar(req, res) {
       ...(pedidoMinimo !== undefined && { pedidoMinimo: Number(pedidoMinimo) || 0 }),
       ...(tempoPreparoMedioMin !== undefined && { tempoPreparoMedioMin: Number(tempoPreparoMedioMin) || 0 }),
       ...(raioMaximoEntregaKm !== undefined && { raioMaximoEntregaKm: Number(raioMaximoEntregaKm) || 0 }),
-      ...(aceitaDelivery !== undefined && { aceitaDelivery: Boolean(aceitaDelivery) }),
-      ...(aceitaRetirada !== undefined && { aceitaRetirada: Boolean(aceitaRetirada) }),
+      ...(aceitaDelivery !== undefined && { aceitaDelivery: bool(aceitaDelivery) }),
+      ...(aceitaRetirada !== undefined && { aceitaRetirada: bool(aceitaRetirada) }),
+      ...(pontosPorReal !== undefined && { pontosPorReal: Number(pontosPorReal) || 1 }),
+      ...(whatsappAtivo !== undefined && { whatsappAtivo: bool(whatsappAtivo) }),
     },
     create: {
       ...DADOS_PADRAO,
+      id: req.estabelecimentoId === 'default' ? 'default' : `config-${req.estabelecimentoId}`,
+      estabelecimentoId: req.estabelecimentoId,
       nomeEstabelecimento: nomeEstabelecimento ?? DADOS_PADRAO.nomeEstabelecimento,
       telefone: telefone ?? null,
       ...dadosEndereco,
@@ -149,8 +156,10 @@ export async function atualizar(req, res) {
       pedidoMinimo: pedidoMinimo !== undefined ? Number(pedidoMinimo) || 0 : 0,
       tempoPreparoMedioMin: tempoPreparoMedioMin !== undefined ? Number(tempoPreparoMedioMin) || 0 : 30,
       raioMaximoEntregaKm: raioMaximoEntregaKm !== undefined ? Number(raioMaximoEntregaKm) || 0 : 12,
-      aceitaDelivery: aceitaDelivery !== undefined ? Boolean(aceitaDelivery) : true,
-      aceitaRetirada: aceitaRetirada !== undefined ? Boolean(aceitaRetirada) : true,
+      aceitaDelivery: aceitaDelivery !== undefined ? bool(aceitaDelivery) : true,
+      aceitaRetirada: aceitaRetirada !== undefined ? bool(aceitaRetirada) : true,
+      pontosPorReal: pontosPorReal !== undefined ? Number(pontosPorReal) || 1 : 1,
+      whatsappAtivo: whatsappAtivo !== undefined ? bool(whatsappAtivo) : false,
     },
   })
 
