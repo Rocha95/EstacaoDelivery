@@ -3,7 +3,7 @@ import { ApiError } from '../utils/ApiError.js'
 
 export function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
   if (err instanceof ApiError) {
-    return res.status(err.status).json({ erro: err.message })
+    return res.status(err.status).json({ erro: err.message, ...(err.code ? { codigo: err.code } : {}) })
   }
 
   // Erros do multer (upload de foto): arquivo grande demais, campo errado, etc.

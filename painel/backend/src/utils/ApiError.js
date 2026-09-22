@@ -1,8 +1,8 @@
-// Erro de aplicação com status HTTP explícito — use throw new ApiError(404, 'mensagem')
-// dentro de qualquer controller para retornar um erro tratado.
+// Erro de aplicação com status HTTP explícito e código opcional para o frontend.
 export class ApiError extends Error {
-  constructor(status, message) {
+  constructor(status, message, code = null) {
     super(message)
     this.status = status
+    this.code = code
   }
 }

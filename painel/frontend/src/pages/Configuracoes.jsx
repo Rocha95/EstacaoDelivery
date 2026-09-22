@@ -16,6 +16,7 @@ const FORM_PADRAO = {
   aceitaDelivery: true,
   pontosPorReal: '1',
   whatsappAtivo: false,
+  chavePix: '',
 }
 
 export default function Configuracoes() {
@@ -44,6 +45,7 @@ export default function Configuracoes() {
         aceitaDelivery: Boolean(data.aceitaDelivery),
         pontosPorReal: String(data.pontosPorReal ?? 1),
         whatsappAtivo: Boolean(data.whatsappAtivo),
+        chavePix: data.chavePix ?? '',
       }))
       .catch((err) => alert(err.message))
       .finally(() => setLoading(false))
@@ -73,6 +75,7 @@ export default function Configuracoes() {
           raioMaximoEntregaKm: Number(form.raioMaximoEntregaKm) || 0,
           pontosPorReal: Number(form.pontosPorReal) || 1,
           whatsappAtivo: Boolean(form.whatsappAtivo),
+          chavePix: form.chavePix.trim() || null,
         }),
       })
       const data = await response.json().catch(() => ({}))
@@ -121,6 +124,7 @@ export default function Configuracoes() {
           <div className="field"><label>Tempo médio (min)</label><input type="number" min="0" value={form.tempoPreparoMedioMin} onChange={(e) => alterar('tempoPreparoMedioMin', e.target.value)} disabled={saving} /></div>
           <div className="field"><label>Raio máximo de entrega (km)</label><input type="number" step="0.1" min="0" value={form.raioMaximoEntregaKm} onChange={(e) => alterar('raioMaximoEntregaKm', e.target.value)} disabled={saving} /></div>
         </div>
+        <div className="form-grid" style={{ marginTop: 18 }}><div className="field"><label>Chave Pix do estabelecimento</label><input type="text" value={form.chavePix} onChange={(e) => alterar('chavePix', e.target.value)} placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória" disabled={saving} /><small style={{ color: '#777' }}>Usada no Pix manual quando o Mercado Pago não estiver configurado.</small></div></div>
         <div className="form-grid" style={{ marginTop: 18 }}><div className="field"><label>Pontos de fidelidade por R$ 1</label><input type="number" min="0" step="0.1" value={form.pontosPorReal} onChange={(e) => alterar('pontosPorReal', e.target.value)} disabled={saving} /></div></div>
         <div style={{ margin: '12px 0' }}><label><input type="checkbox" checked={form.whatsappAtivo} onChange={(e) => alterar('whatsappAtivo', e.target.checked)} disabled={saving} /> Ativar WhatsApp para notificações (requer Evolution API configurada no backend)</label></div>
 

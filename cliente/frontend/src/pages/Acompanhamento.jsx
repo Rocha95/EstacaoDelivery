@@ -4,6 +4,7 @@ import TopNavBack from '../components/TopNavBack'
 import { buscarPedidoPorId, buscarAvaliacaoPedido, avaliarPedido } from '../services/api'
 
 const ETAPAS = [
+  ['AGUARDANDO_PAGAMENTO', 'Aguardando pagamento', '💠'],
   ['RECEBIDO', 'Pedido recebido', '🧾'],
   ['EM_PRODUCAO', 'Em produção', '👨‍🍳'],
   ['SAIU_PARA_ENTREGA', 'Saiu para entrega', '🛵'],

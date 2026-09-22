@@ -15,8 +15,9 @@ export default function CheckoutPagamento() {
   const [agendar, setAgendar] = useState(false)
   const [agendadoPara, setAgendadoPara] = useState('')
   const [pagamentoOnlinePix, setPagamentoOnlinePix] = useState(false)
+  const [pixManualConfigurado, setPixManualConfigurado] = useState(false)
 
-  useEffect(() => { buscarConfiguracao().then((c) => setPagamentoOnlinePix(Boolean(c?.pagamentoOnlinePix))).catch(() => {}) }, [])
+  useEffect(() => { buscarConfiguracao().then((c) => { setPagamentoOnlinePix(Boolean(c?.pagamentoOnlinePix)); setPixManualConfigurado(Boolean(c?.pixManualConfigurado)) }).catch(() => {}) }, [])
 
   useEffect(() => {
     if (modoEntrega !== 'delivery' || !enderecoSelecionado) {
@@ -121,7 +122,7 @@ export default function CheckoutPagamento() {
 
         <div className="section-title">Forma de pagamento</div>
         <div className={`option-row ${pagamento === 'PIX' ? 'selected' : ''}`} onClick={() => setPagamento('PIX')}>
-          <div><div className="title">💠 Pix</div><div className="subtitle">{pagamentoOnlinePix ? 'Pagamento online via Pix' : 'Pix — confirmação manual pelo estabelecimento'}</div></div><div className="radio-dot" />
+          <div><div className="title">💠 Pix</div><div className="subtitle">{pagamentoOnlinePix ? 'Pagamento online via Pix' : pixManualConfigurado ? 'Pix com QR Code e Pix Copia e Cola' : 'Pix — chave ainda não configurada no estabelecimento'}</div></div><div className="radio-dot" />
         </div>
         <div className={`option-row ${pagamento === 'DINHEIRO_ENTREGA' ? 'selected' : ''}`} onClick={() => setPagamento('DINHEIRO_ENTREGA')}>
           <div><div className="title">💵 Dinheiro na entrega</div><div className="subtitle">Pagamento ao receber</div></div><div className="radio-dot" />

@@ -82,7 +82,7 @@ export async function atualizar(req, res) {
     nomeEstabelecimento, telefone,
     endereco, enderecoRua, enderecoNumero, enderecoBairro, enderecoCidade, enderecoEstado, enderecoCep,
     latitude, longitude, pedidoMinimo, tempoPreparoMedioMin, raioMaximoEntregaKm,
-    aceitaDelivery, aceitaRetirada, pontosPorReal, whatsappAtivo,
+    aceitaDelivery, aceitaRetirada, pontosPorReal, whatsappAtivo, chavePix,
   } = req.body
 
   const possuiCamposEstruturados = [enderecoRua, enderecoNumero, enderecoBairro, enderecoCidade, enderecoEstado, enderecoCep].some((v) => v !== undefined)
@@ -144,6 +144,7 @@ export async function atualizar(req, res) {
       ...(aceitaRetirada !== undefined && { aceitaRetirada: bool(aceitaRetirada) }),
       ...(pontosPorReal !== undefined && { pontosPorReal: Number(pontosPorReal) || 1 }),
       ...(whatsappAtivo !== undefined && { whatsappAtivo: bool(whatsappAtivo) }),
+      ...(chavePix !== undefined && { chavePix: String(chavePix || '').trim() || null }),
     },
     create: {
       ...DADOS_PADRAO,
@@ -160,6 +161,7 @@ export async function atualizar(req, res) {
       aceitaRetirada: aceitaRetirada !== undefined ? bool(aceitaRetirada) : true,
       pontosPorReal: pontosPorReal !== undefined ? Number(pontosPorReal) || 1 : 1,
       whatsappAtivo: whatsappAtivo !== undefined ? bool(whatsappAtivo) : false,
+      chavePix: chavePix !== undefined ? String(chavePix || '').trim() || null : null,
     },
   })
 

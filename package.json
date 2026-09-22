@@ -14,6 +14,9 @@
     "dev:cliente:backend": "npm run dev --workspace cliente/backend",
     "db:migrate": "npm run prisma:migrate --workspace packages/database",
     "db:seed": "npm run seed --workspace packages/database",
-    "db:studio": "npm run prisma:studio --workspace packages/database"
+    "db:studio": "npm run prisma:studio --workspace packages/database",
+    "qa:static": "node qa/static-check.mjs",
+    "qa:api": "node qa/api/run-api-tests.mjs",
+    "qa:smoke": "node qa/api/run-api-tests.mjs"
   }
 }

@@ -73,6 +73,7 @@ export default function Historico() {
   // Helper para rotular e formatar status dos pedidos
   const formatarStatus = (status) => {
     if (!status) return 'Realizado'
+    if (status === 'AGUARDANDO_PAGAMENTO') return 'Aguardando pagamento'
     const statusLower = String(status).toLowerCase()
 
     const mapaStatus = {

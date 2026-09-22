@@ -1,238 +1,267 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import StatusPill from '../components/StatusPill'
 
 const STATUS = {
+  AGUARDANDO_PAGAMENTO: 'AGUARDANDO_PAGAMENTO',
   RECEBIDO: 'RECEBIDO',
   EM_PRODUCAO: 'EM_PRODUCAO',
   SAIU_PARA_ENTREGA: 'SAIU_PARA_ENTREGA',
   FINALIZADO: 'FINALIZADO',
+  CANCELADO: 'CANCELADO',
 }
 
 const STATUS_LABEL = {
-  [STATUS.RECEBIDO]: 'Recebido',
-  [STATUS.EM_PRODUCAO]: 'Em Produção',
-  [STATUS.SAIU_PARA_ENTREGA]: 'Saiu para Entrega',
-  [STATUS.FINALIZADO]: 'Finalizado',
+  AGUARDANDO_PAGAMENTO: 'Aguardando pagamento',
+  RECEBIDO: 'Recebido',
+  EM_PRODUCAO: 'Em produção',
+  SAIU_PARA_ENTREGA: 'Saiu para entrega',
+  FINALIZADO: 'Finalizado',
+  CANCELADO: 'Cancelado',
 }
 
 const FILTERS = [
   { key: 'todos', label: 'Todos' },
-  { key: STATUS.RECEBIDO, label: STATUS_LABEL[STATUS.RECEBIDO] },
-  { key: STATUS.EM_PRODUCAO, label: STATUS_LABEL[STATUS.EM_PRODUCAO] },
-  { key: STATUS.SAIU_PARA_ENTREGA, label: STATUS_LABEL[STATUS.SAIU_PARA_ENTREGA] },
-  { key: STATUS.FINALIZADO, label: STATUS_LABEL[STATUS.FINALIZADO] },
+  ...Object.values(STATUS).map((key) => ({ key, label: STATUS_LABEL[key] })),
 ]
 
 const NEXT_STATUS = {
-  [STATUS.RECEBIDO]: STATUS.EM_PRODUCAO,
-  [STATUS.EM_PRODUCAO]: STATUS.SAIU_PARA_ENTREGA,
-  [STATUS.SAIU_PARA_ENTREGA]: STATUS.FINALIZADO,
+  RECEBIDO: STATUS.EM_PRODUCAO,
+  EM_PRODUCAO: STATUS.SAIU_PARA_ENTREGA,
+  SAIU_PARA_ENTREGA: STATUS.FINALIZADO,
 }
 
 const NEXT_LABEL = {
-  [STATUS.RECEBIDO]: 'Iniciar produção',
-  [STATUS.EM_PRODUCAO]: 'Saiu p/ entrega',
-  [STATUS.SAIU_PARA_ENTREGA]: 'Finalizar',
+  RECEBIDO: 'Iniciar produção',
+  EM_PRODUCAO: 'Saiu para entrega',
+  SAIU_PARA_ENTREGA: 'Finalizar pedido',
+}
+
+const TIPO_ENTREGA_LABEL = {
+  DELIVERY: 'Delivery',
+  RETIRADA: 'Retirada no local',
+}
+
+const PAGAMENTO_LABEL = {
+  PIX: 'Pix',
+  DINHEIRO_ENTREGA: 'Dinheiro na entrega',
+  CARTAO_ENTREGA: 'Cartão na entrega',
+}
+
+function formatCliente(cliente) {
+  return typeof cliente === 'object' && cliente !== null
+    ? cliente.nome || 'Cliente sem nome'
+    : cliente || 'Cliente não identificado'
+}
+
+function formatItens(itens) {
+  if (!Array.isArray(itens)) return ''
+  return itens.map((item) => {
+    if (!item || typeof item !== 'object') return String(item || '')
+    return `${item.quantidade || 1}x ${item.nome || 'Item'}`
+  }).join(', ')
 }
 
 export default function Pedidos() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState('')
   const [filter, setFilter] = useState('todos')
   const [busca, setBusca] = useState('')
+  const [atualizando, setAtualizando] = useState(null)
+  const [aviso, setAviso] = useState('')
 
-  // 1. Busca os pedidos do banco ao carregar
-  useEffect(() => {
-    async function fetchOrders() {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await fetch('/api/pedidos')
-        if (!response.ok) throw new Error('Erro ao carregar lista de pedidos')
-        const data = await response.json()
-        setOrders(Array.isArray(data) ? data : [])
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
+  const carregar = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const response = await fetch('/api/pedidos')
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data?.erro || data?.message || data?.error || `Não foi possível carregar os pedidos (HTTP ${response.status}).`)
       }
+      setOrders(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Erro ao carregar pedidos:', err)
+      setError(err.message || 'Não foi possível carregar os pedidos.')
+    } finally {
+      setLoading(false)
     }
-
-    fetchOrders()
   }, [])
 
-  // 2. Atualização otimista + PATCH/PUT com tratamento do erro 404
-  const advance = async (id, currentStatus) => {
-    const nextStatus = NEXT_STATUS[currentStatus]
-    if (!nextStatus) return
+  useEffect(() => {
+    carregar()
+  }, [carregar])
 
-    // Atualização otimista na interface
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: nextStatus } : o))
-    )
-
+  const advance = async (pedido, nextStatus) => {
+    if (!pedido?.id || !nextStatus || atualizando) return
+    setAviso('')
+    if (pedido.agendadoPara && new Date(pedido.agendadoPara).getTime() > Date.now()) {
+      const quando = new Date(pedido.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      setAviso(`Este pedido está agendado para ${quando}. A produção só poderá ser iniciada a partir do horário agendado.`)
+      return
+    }
+    setAtualizando(pedido.id)
     try {
-      // Tenta rota RESTful padrão: PATCH /api/pedidos/:id
-      let response = await fetch(`/api/pedidos/${id}`, {
+      const response = await fetch(`/api/pedidos/${pedido.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: nextStatus }),
       })
-
-      // Se der 404, tenta o endpoint secundário: PATCH /api/pedidos/:id/status
-      if (response.status === 404) {
-        response = await fetch(`/api/pedidos/${id}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: nextStatus }),
-        })
-      }
-
-      // Se ainda der 404, tenta com método PUT no endpoint principal
-      if (response.status === 404) {
-        response = await fetch(`/api/pedidos/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: nextStatus }),
-        })
-      }
-
+      const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        throw new Error(`Falha ao atualizar pedido (HTTP ${response.status})`)
+        const mensagem = data?.erro || data?.message || data?.error || `Não foi possível atualizar o pedido (HTTP ${response.status}).`
+        if (data?.codigo === 'PEDIDO_AGENDADO' || /agendado/i.test(mensagem)) setAviso(mensagem)
+        throw new Error(mensagem)
       }
+      await carregar()
     } catch (err) {
       console.error('Erro ao atualizar status:', err)
-      alert('Não foi possível atualizar o pedido. Tente novamente.')
-
-      // Reverte o estado em caso de falha na comunicação
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: currentStatus } : o))
-      )
+      setAviso(err.message || 'Não foi possível atualizar o pedido.')
+    } finally {
+      setAtualizando(null)
     }
   }
 
-  // Helpers de formatação segura
-  const getClienteNome = (cliente) => {
-    if (typeof cliente === 'object' && cliente !== null) {
-      return cliente.nome || 'Cliente sem nome'
+  const confirmarPagamentoManual = async (pedido) => {
+    if (!pedido?.id || atualizando) return
+    setAviso('')
+    setAtualizando(pedido.id)
+    try {
+      const response = await fetch(`/api/pagamentos/${pedido.id}/confirmar-manual`, { method: 'PATCH' })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data?.erro || data?.message || `Não foi possível confirmar o pagamento (HTTP ${response.status}).`)
+      await carregar()
+    } catch (err) {
+      setAviso(err.message || 'Não foi possível confirmar o pagamento.')
+    } finally {
+      setAtualizando(null)
     }
-    return cliente || 'Cliente não identificado'
   }
 
-  const formatItens = (itens) => {
-    if (Array.isArray(itens)) {
-      return itens
-        .map((item) =>
-          typeof item === 'object' && item !== null
-            ? item.nome || item.descricao || 'Item'
-            : item
-        )
-        .join(', ')
-    }
-    return itens || ''
-  }
-
-  // 3. Filtragem e busca reativas
   const visiveis = useMemo(() => {
-    const lista = Array.isArray(orders) ? orders : []
     const termo = busca.trim().toLowerCase()
-
-    return lista.filter((o) => {
-      const passaFiltro = filter === 'todos' || o?.status === filter
-
-      const nomeCliente = getClienteNome(o?.cliente).toLowerCase()
-      const orderId = String(o?.id || '').toLowerCase()
-
-      const passaBusca =
-        termo === '' ||
-        nomeCliente.includes(termo) ||
-        orderId.includes(termo)
-
-      return passaFiltro && passaBusca
+    return orders.filter((pedido) => {
+      const passaStatus = filter === 'todos' || pedido.status === filter
+      const cliente = formatCliente(pedido.cliente).toLowerCase()
+      const numero = String(pedido.numero || '').toLowerCase()
+      return passaStatus && (!termo || cliente.includes(termo) || numero.includes(termo))
     })
   }, [orders, filter, busca])
 
   if (loading) return <div className="loading">Carregando pedidos...</div>
-  if (error) return <div className="error-message">Erro: {error}</div>
+
+  if (error) {
+    return (
+      <div>
+        <div className="section-head">
+          <div>
+            <h2>Pedidos</h2>
+            <div className="muted">Acompanhe os pedidos recebidos pela loja</div>
+          </div>
+        </div>
+        <div className="card" style={{ borderColor: '#d32f2f' }}>
+          <strong>Não foi possível carregar os pedidos.</strong>
+          <div className="muted" style={{ marginTop: 6 }}>{error}</div>
+          <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={carregar}>Tentar novamente</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
       <div className="section-head">
         <div>
-          <h2>Todos os pedidos</h2>
+          <h2>Pedidos</h2>
           <div className="muted">{visiveis.length} pedido(s) encontrados</div>
         </div>
         <input
           className="field"
-          placeholder="Buscar por cliente ou nº do pedido"
+          placeholder="Buscar por cliente ou número do pedido"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          style={{
-            padding: '9px 12px',
-            border: '1px solid var(--line)',
-            borderRadius: 6,
-            fontSize: 13,
-            minWidth: 260,
-          }}
+          style={{ padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 6, fontSize: 13, minWidth: 280 }}
         />
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            className={filter === f.key ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}
+        {FILTERS.map((item) => (
+          <button key={item.key} className={filter === item.key ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm'} onClick={() => setFilter(item.key)}>
+            {item.label}
           </button>
         ))}
       </div>
 
-      <div className="card">
+      {aviso && (
+        <div className="card" role="alert" style={{ marginBottom: 16, borderColor: '#d9a441', background: '#fff8e7' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <span style={{ fontSize: 20 }}>⏰</span>
+            <div>
+              <strong style={{ color: '#76530b' }}>Pedido agendado</strong>
+              <div style={{ marginTop: 4, color: '#76530b' }}>{aviso}</div>
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setAviso('')}>Fechar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="card" style={{ overflowX: 'auto' }}>
         <table className="data-table">
           <thead>
             <tr>
               <th>Pedido</th>
               <th>Cliente</th>
-              <th>Tipo</th>
+              <th>Recebimento</th>
               <th>Itens</th>
               <th>Pagamento</th>
               <th>Total</th>
               <th>Status</th>
               <th>Horário</th>
-              <th>Ações</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody>
-            {visiveis.map((o) => (
-              <tr key={o.id}>
-                <td className="order-id">#{o.numero || String(o.id).slice(-6)}</td>
-                <td>{getClienteNome(o.cliente)}</td>
-                <td>{o.tipo === 'delivery' ? 'Delivery' : 'Retirada'}</td>
-                <td style={{ color: '#6B675F', maxWidth: 220 }}>{formatItens(o.itens)}</td>
-                <td>{o.pagamento || 'N/A'}</td>
-                <td className="money">R$ {Number(o.total || 0).toFixed(2)}</td>
-                <td><StatusPill status={o.status} /></td>
-                <td>{o.agendadoPara ? `Agendado: ${new Date(o.agendadoPara).toLocaleString('pt-BR')}` : (o.hora || o.created_at || '--:--')}</td>
-                <td>
-                  {NEXT_STATUS[o.status] ? (
-                    <button className="btn btn-ghost btn-sm" onClick={() => advance(o.id, o.status)}>
-                      {NEXT_LABEL[o.status]}
-                    </button>
-                  ) : (
-                    <span style={{ color: '#8A867C', fontSize: 12 }}>Concluído</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {visiveis.length === 0 && (
-              <tr>
-                <td colSpan={9}>
-                  <div className="empty-state">Nenhum pedido encontrado com esses filtros.</div>
-                </td>
-              </tr>
+            {visiveis.map((pedido) => {
+              const next = NEXT_STATUS[pedido.status]
+              return (
+                <tr key={pedido.id}>
+                  <td className="order-id">#{pedido.numero || String(pedido.id).slice(-6)}</td>
+                  <td>{formatCliente(pedido.cliente)}</td>
+                  <td>{TIPO_ENTREGA_LABEL[pedido.tipoEntrega] || pedido.tipoEntrega || 'Não informado'}</td>
+                  <td style={{ color: '#6B675F', maxWidth: 260 }}>{formatItens(pedido.itens)}</td>
+                  <td>{PAGAMENTO_LABEL[pedido.formaPagamento] || pedido.formaPagamento || 'Não informado'}</td>
+                  <td className="money">R$ {Number(pedido.total || 0).toFixed(2)}</td>
+                  <td><StatusPill status={pedido.status} /></td>
+                  <td>{pedido.agendadoPara ? `Agendado: ${new Date(pedido.agendadoPara).toLocaleString('pt-BR')}` : new Date(pedido.criadoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>
+                    {pedido.status === 'AGUARDANDO_PAGAMENTO' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        {pedido.pagamento?.expiraEm && <span style={{ color: '#8a6500', fontSize: 11 }}>Pagamento até {new Date(pedido.pagamento.expiraEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+                        {pedido.pagamento?.provedor === 'MANUAL' ? (
+                          <button className="btn btn-primary btn-sm" disabled={atualizando === pedido.id} onClick={() => confirmarPagamentoManual(pedido)}>
+                            {atualizando === pedido.id ? 'Confirmando...' : 'Confirmar pagamento'}
+                          </button>
+                        ) : (
+                          <span style={{ color: '#8A867C', fontSize: 12 }}>Aguardando confirmação do Pix</span>
+                        )}
+                      </div>
+                    ) : next ? (() => {
+                      const agendado = pedido.agendadoPara && new Date(pedido.agendadoPara).getTime() > Date.now()
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <button className="btn btn-ghost btn-sm" disabled={atualizando === pedido.id || agendado} onClick={() => advance(pedido, next)} title={agendado ? 'A produção só poderá ser iniciada no horário agendado.' : undefined}>
+                            {atualizando === pedido.id ? 'Atualizando...' : agendado ? 'Aguardando horário' : NEXT_LABEL[pedido.status]}
+                          </button>
+                          {agendado && <span style={{ color: '#8a6500', fontSize: 11 }}>Agendado para {new Date(pedido.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>}
+                        </div>
+                      )
+                    })() : <span style={{ color: '#8A867C', fontSize: 12 }}>Concluído</span>}
+                  </td>
+                </tr>
+              )
+            })}
+            {!visiveis.length && (
+              <tr><td colSpan={9}><div className="empty-state">Nenhum pedido encontrado com esses filtros.</div></td></tr>
             )}
           </tbody>
         </table>

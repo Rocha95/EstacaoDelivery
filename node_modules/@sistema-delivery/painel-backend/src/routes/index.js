@@ -16,6 +16,7 @@ import estoqueRoutes from './estoque.routes.js'
 import cozinhaRoutes from './cozinha.routes.js'
 import avaliacoesRoutes from './avaliacoes.routes.js'
 import estabelecimentosRoutes from './estabelecimentos.routes.js'
+import pagamentosRoutes from './pagamentos.routes.js'
 
 const router = Router()
 
@@ -38,5 +39,6 @@ router.use('/estoque', estoqueRoutes)
 router.use('/cozinha', cozinhaRoutes)
 router.use('/avaliacoes', avaliacoesRoutes)
 router.use('/estabelecimentos', estabelecimentosRoutes)
+router.use('/pagamentos', pagamentosRoutes)
 
 export default router

@@ -11,6 +11,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // As imagens enviadas pelo Painel são servidas pelo backend.
+      // Sem este proxy, o navegador tentaria buscar /uploads no Vite (5173).
+      '/uploads': {
+        target: 'http://localhost:3333',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 })

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { imagemPublica } from '../utils/imagem'
 
 const FORM_VAZIO = { id: null, nome: '', preco: '', categoriaId: '', imagemUrl: '', arquivoImagem: null }
 
@@ -142,7 +143,7 @@ export default function Adicionais() {
           </div>
           {imagePreview && (
             <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <img src={imagePreview} alt="Preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)' }} />
+              <img src={imagemPublica(imagePreview)} alt="Preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)' }} />
               <button type="button" className="btn btn-ghost" style={{ fontSize: 12, color: '#d9534f' }} onClick={() => { setImagePreview(''); setForm({ ...form, imagemUrl: '', arquivoImagem: null }) }}>Remover foto</button>
             </div>
           )}
@@ -161,7 +162,7 @@ export default function Adicionais() {
                   const estaAtivo = Boolean(a.ativo)
                   return (
                     <tr key={a.id}>
-                      <td style={{ width: 46 }}>{a.imagemUrl ? <img src={a.imagemUrl} alt={a.nome} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6 }} /> : <div style={{ width: 36, height: 36, borderRadius: 6, background: '#F0EFEA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A09D94', fontSize: 15 }}>➕</div>}</td>
+                      <td style={{ width: 46 }}>{a.imagemUrl ? <img src={imagemPublica(a.imagemUrl)} alt={a.nome} style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6 }} /> : <div style={{ width: 36, height: 36, borderRadius: 6, background: '#F0EFEA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A09D94', fontSize: 15 }}>➕</div>}</td>
                       <td style={{ fontWeight: 600 }}>{a.nome}</td>
                       <td className="money">{precoNum > 0 ? `+ R$ ${precoNum.toFixed(2)}` : 'Sem custo'}</td>
                       <td style={{ textAlign: 'right' }}>

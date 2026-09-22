@@ -37,8 +37,14 @@ export async function obter(req, res) {
 export async function avancarStatus(req, res) {
   const pedido = await prisma.pedido.findFirst({ where: { id: req.params.id, estabelecimentoId: req.estabelecimentoId }, select: { status: true, agendadoPara: true, formaPagamento: true, pagamentoStatus: true, pagamento: { select: { provedor: true } } } })
   if (!pedido) throw new ApiError(404, 'Pedido não encontrado.')
-  if (pedido.agendadoPara && new Date(pedido.agendadoPara).getTime() > Date.now()) throw new ApiError(400, `Este pedido está agendado para ${new Date(pedido.agendadoPara).toLocaleString('pt-BR')}.`)
-  if (pedido.status === 'RECEBIDO' && pedido.formaPagamento === 'PIX' && pedido.pagamento?.provedor === 'MERCADO_PAGO' && pedido.pagamentoStatus !== 'APROVADO') throw new ApiError(400, 'Aguarde a confirmação do pagamento Pix antes de iniciar a produção.')
+  if (pedido.status === 'AGUARDANDO_PAGAMENTO') throw new ApiError(409, 'Este pedido ainda está aguardando o pagamento do Pix. Confirme o pagamento antes de iniciar a produção.', 'PAGAMENTO_PENDENTE')
+  if (pedido.agendadoPara && new Date(pedido.agendadoPara).getTime() > Date.now()) {
+    const dataAgendamento = new Date(pedido.agendadoPara)
+    const data = dataAgendamento.toLocaleDateString('pt-BR')
+    const hora = dataAgendamento.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    throw new ApiError(409, `Este pedido está agendado para ${data} às ${hora}. A produção só poderá ser iniciada a partir do horário agendado.`, 'PEDIDO_AGENDADO')
+  }
+  if (pedido.status === 'RECEBIDO' && pedido.formaPagamento === 'PIX' && pedido.pagamentoStatus !== 'APROVADO') throw new ApiError(400, 'Aguarde a confirmação do pagamento Pix antes de iniciar a produção.', 'PAGAMENTO_PENDENTE')
   const aliases = { PRODUCAO: 'EM_PRODUCAO', ENTREGA: 'SAIU_PARA_ENTREGA' }
   const solicitado = req.body?.status ? (aliases[req.body.status] || req.body.status) : null
   const proximo = PROXIMO_STATUS[pedido.status]

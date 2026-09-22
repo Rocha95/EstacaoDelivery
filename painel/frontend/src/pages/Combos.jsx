@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { imagemPublica } from '../utils/imagem'
 
 const FORM_VAZIO = { id: '', nome: '', itensText: '', preco: '', imagemUrl: '', arquivoImagem: null, removerImagem: false }
 
@@ -154,7 +155,7 @@ export default function Combos() {
             <span style={{ fontSize: 12, color: '#8A867C' }}>ou colar URL:</span>
             <input type="url" placeholder="https://exemplo.com/combo.jpg" value={novo.imagemUrl} disabled={submitting} onChange={handleImageUrl} style={{ flex: 1, minWidth: 220 }} />
           </div>
-          {imagePreview && <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}><img src={imagePreview} alt="Preview do combo" style={{ width: 72, height: 54, objectFit: 'cover', borderRadius: 8 }} /><button type="button" className="btn btn-ghost" onClick={removerFoto} disabled={submitting}>Remover foto</button></div>}
+          {imagePreview && <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}><img src={imagemPublica(imagePreview)} alt="Preview do combo" style={{ width: 72, height: 54, objectFit: 'cover', borderRadius: 8 }} /><button type="button" className="btn btn-ghost" onClick={removerFoto} disabled={submitting}>Remover foto</button></div>}
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}><button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Salvando...' : novo.id ? 'Salvar alterações' : 'Salvar combo'}</button><button type="button" className="btn btn-ghost" onClick={resetForm} disabled={submitting}>Cancelar</button></div>
       </form>}
@@ -163,7 +164,7 @@ export default function Combos() {
         {combos.map((c, index) => {
           const precoNum = Number(c?.preco) || 0, economizaNum = Number(c?.economiza) || 0, estaAtivo = Boolean(c?.ativo), listaItens = formatarItens(c?.itens)
           return <div className="card" key={c.id || index} style={{ padding: 16 }}>
-            {c.imagemUrl && <img src={c.imagemUrl} alt={c.nome} style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 10, marginBottom: 12 }} />}
+            {c.imagemUrl && <img src={imagemPublica(c.imagemUrl)} alt={c.nome} style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 10, marginBottom: 12 }} />}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 10 }}><div style={{ fontWeight: 800, fontSize: 14.5 }}>{c.nome}</div><button className={`toggle ${estaAtivo ? 'on' : ''}`} onClick={() => toggleAtivo(c.id, estaAtivo)} title="Ativar/inativar combo"><span className="knob" /></button></div>
             <ul style={{ margin: '10px 0', paddingLeft: 18, color: '#6B675F', fontSize: 13 }}>{listaItens.map((item, idx) => <li key={idx}>{item}</li>)}</ul>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 10 }}><span className="money" style={{ fontSize: 16 }}>R$ {precoNum.toFixed(2)}</span>{economizaNum > 0 && <span className="pill pill-basil">economiza R$ {economizaNum.toFixed(2)}</span>}</div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { imagemPublica } from '../utils/imagem'
 
 export default function Produtos() {
   const [produtos, setProdutos] = useState([])
@@ -359,7 +360,7 @@ export default function Produtos() {
               {imagePreview && (
                 <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
                   <img
-                    src={imagePreview}
+                    src={imagemPublica(imagePreview)}
                     alt="Preview"
                     style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)' }}
                   />
@@ -438,7 +439,7 @@ export default function Produtos() {
                   <td>
                     {fotoUrl ? (
                       <img
-                        src={fotoUrl}
+                        src={imagemPublica(fotoUrl)}
                         alt={p.nome}
                         style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 6 }}
                       />
