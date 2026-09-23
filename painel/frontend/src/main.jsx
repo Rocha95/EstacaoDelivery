@@ -9,7 +9,7 @@ window.fetch = (input, init = {}) => {
   const headers = new Headers(init.headers || {})
   const estabelecimentoId = localStorage.getItem('estabelecimentoId')
   if (estabelecimentoId) headers.set('X-Estabelecimento-Id', estabelecimentoId)
-  return fetchOriginal(input, { ...init, headers })
+  return fetchOriginal(input, { ...init, headers, credentials: init.credentials || 'include' })
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

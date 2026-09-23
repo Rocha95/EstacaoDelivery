@@ -11,7 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export function createApp() {
   const app = express()
 
-  app.use(cors())
+  app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }))
   app.use(express.json())
 
   // Fotos enviadas pelo painel ficam acessíveis em /uploads/produtos/arquivo.jpg

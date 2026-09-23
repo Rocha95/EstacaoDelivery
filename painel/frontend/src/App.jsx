@@ -19,6 +19,9 @@ import Estoque from './pages/Estoque'
 import Cozinha from './pages/Cozinha'
 import Avaliacoes from './pages/Avaliacoes'
 import Estabelecimentos from './pages/Estabelecimentos'
+import Login from './pages/Login'
+import { useEffect, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 
 const PAGES = {
   '/': { title: 'Dashboard', subtitle: 'Visão geral do turno de hoje', Component: Dashboard },
@@ -40,6 +43,8 @@ const PAGES = {
   '/relatorios': { title: 'Relatórios', subtitle: 'Desempenho de vendas e operação', Component: Relatorios },
 }
 
+function Protegido({ children }) { const [status,setStatus]=useState('loading'); const location=useLocation(); useEffect(()=>{ fetch('/api/auth/me',{credentials:'include'}).then(r=>{ if(!r.ok) throw new Error(); return r.json() }).then(d=>{ localStorage.setItem('painelUsuario',JSON.stringify(d.usuario)); setStatus('ok') }).catch(()=>{ localStorage.removeItem('painelUsuario'); setStatus('login') }) },[]); if(status==='loading') return <div className="loading">Verificando sessão...</div>; if(status==='login') return <Navigate to="/login" replace state={{from:location}}/>; return children }
+
 function PageShell({ path }) {
   const { title, subtitle, Component } = PAGES[path]
   return (
@@ -58,8 +63,9 @@ export default function App() {
       <Sidebar />
       <div className="main-col">
         <Routes>
+          <Route path="/login" element={<Login />} />
           {Object.keys(PAGES).map((path) => (
-            <Route key={path} path={path} element={<PageShell path={path} />} />
+            <Route key={path} path={path} element={<Protegido><PageShell path={path} /></Protegido>} />
           ))}
         </Routes>
       </div>

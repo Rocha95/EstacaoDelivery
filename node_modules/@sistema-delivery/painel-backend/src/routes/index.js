@@ -1,3 +1,4 @@
+import authRoutes from './auth.routes.js'
 import { Router } from 'express'
 import categoriasRoutes from './categorias.routes.js'
 import produtosRoutes from './produtos.routes.js'
@@ -21,6 +22,10 @@ import pagamentosRoutes from './pagamentos.routes.js'
 const router = Router()
 
 router.get('/', (req, res) => res.json({ ok: true, servico: 'sistema-delivery-api' }))
+router.use('/auth', authRoutes)
+
+import { authContext } from '../middlewares/auth.js'
+router.use(authContext)
 
 router.use('/categorias', categoriasRoutes)
 router.use('/produtos', produtosRoutes)

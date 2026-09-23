@@ -5,12 +5,11 @@
 //        npm run seed
 
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-// Placeholder — troque por um hash de verdade (ex: bcrypt) quando a
-// autenticação real for implementada.
-const SENHA_PLACEHOLDER = 'trocar-por-hash-bcrypt'
+const SENHA_PADRAO_DEV = '123456'
 
 async function main() {
   console.log('Zerando dados antigos...')
@@ -192,12 +191,13 @@ async function main() {
   })
 
   console.log('Usuários (equipe + clientes)...')
+  const senhaHashDev = await bcrypt.hash(SENHA_PADRAO_DEV, 10)
   await prisma.usuario.createMany({
     data: [
-      { estabelecimentoId: 'default', nome: 'Fernando (dono)', email: 'fernando@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'ADMINISTRADOR' },
-      { estabelecimentoId: 'default', nome: 'Patrícia Lima', email: 'patricia@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'GERENTE' },
-      { estabelecimentoId: 'default', nome: 'Kauê Silva', email: 'kaue@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'COZINHA' },
-      { estabelecimentoId: 'default', nome: 'Yasmin Rocha', email: 'yasmin@estabelecimento.com', senhaHash: SENHA_PLACEHOLDER, tipo: 'EQUIPE', papel: 'ATENDIMENTO', ativo: false },
+      { estabelecimentoId: 'default', nome: 'Fernando (dono)', email: 'fernando@estabelecimento.com', senhaHash: senhaHashDev, tipo: 'EQUIPE', papel: 'ADMINISTRADOR', podeCriarUsuarios: true },
+      { estabelecimentoId: 'default', nome: 'Patrícia Lima', email: 'patricia@estabelecimento.com', senhaHash: senhaHashDev, tipo: 'EQUIPE', papel: 'GERENTE' },
+      { estabelecimentoId: 'default', nome: 'Kauê Silva', email: 'kaue@estabelecimento.com', senhaHash: senhaHashDev, tipo: 'EQUIPE', papel: 'COZINHA' },
+      { estabelecimentoId: 'default', nome: 'Yasmin Rocha', email: 'yasmin@estabelecimento.com', senhaHash: senhaHashDev, tipo: 'EQUIPE', papel: 'ATENDIMENTO', ativo: false },
     ],
   })
 
@@ -205,7 +205,7 @@ async function main() {
     data: {
       nome: 'Marina Alves',
       telefone: '(15) 99801-2231',
-      senhaHash: SENHA_PLACEHOLDER,
+      senhaHash: senhaHashDev,
       tipo: 'CLIENTE',
       enderecos: {
         create: [
@@ -218,7 +218,7 @@ async function main() {
     data: {
       nome: 'Diego Costa',
       telefone: '(15) 99122-8890',
-      senhaHash: SENHA_PLACEHOLDER,
+      senhaHash: senhaHashDev,
       tipo: 'CLIENTE',
       enderecos: {
         create: [

@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 const PAPEL_PARA_API = { Administrador: 'ADMINISTRADOR', Gerente: 'GERENTE', Atendente: 'ATENDIMENTO', Cozinha: 'COZINHA' }
 const PAPEL_PARA_TELA = { ADMINISTRADOR: 'Administrador', GERENTE: 'Gerente', ATENDIMENTO: 'Atendente', COZINHA: 'Cozinha' }
 
-const FORM_VAZIO = { id: null, nome: '', email: '', senha: '', papel: 'Atendente' }
+const FORM_VAZIO = { id: null, nome: '', email: '', senha: '', papel: 'Atendente', podeCriarUsuarios: false }
+const usuarioLogado = () => { try { return JSON.parse(localStorage.getItem('painelUsuario') || '{}') } catch { return {} } }
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([])
@@ -11,6 +12,8 @@ export default function Usuarios() {
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [novo, setNovo] = useState(FORM_VAZIO)
+  const [meuUsuario] = useState(usuarioLogado())
+  const podeCriar = meuUsuario.papel === 'ADMINISTRADOR' && Boolean(meuUsuario.podeCriarUsuarios)
 
   const carregar = async () => {
     const response = await fetch('/api/usuarios')
@@ -33,6 +36,7 @@ export default function Usuarios() {
       email: usuario.email || '',
       senha: '',
       papel: PAPEL_PARA_TELA[usuario.papel] || 'Atendente',
+      podeCriarUsuarios: Boolean(usuario.podeCriarUsuarios),
     })
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -64,6 +68,7 @@ export default function Usuarios() {
         nome: novo.nome.trim(),
         email: novo.email.trim(),
         papel: PAPEL_PARA_API[novo.papel],
+        podeCriarUsuarios: Boolean(novo.podeCriarUsuarios),
       }
       if (novo.senha.trim()) payload.senha = novo.senha
 
@@ -87,7 +92,7 @@ export default function Usuarios() {
     <div>
       <div className="section-head">
         <div><h2>Usuários do painel</h2><div className="muted">Quem tem acesso e com qual função</div></div>
-        <button className="btn btn-primary" onClick={() => showForm ? fecharForm() : abrirNovo()}>{showForm ? 'Fechar formulário' : '+ Novo usuário'}</button>
+        <button className="btn btn-primary" disabled={!podeCriar} title={!podeCriar ? 'Apenas administradores autorizados podem criar usuários.' : ''} onClick={() => showForm ? fecharForm() : abrirNovo()}>{showForm ? 'Fechar formulário' : '+ Novo usuário'}</button>
       </div>
 
       {showForm && <form className="card" style={{ padding: 18, marginBottom: 18 }} onSubmit={salvar}>
@@ -98,7 +103,7 @@ export default function Usuarios() {
           <div className="field"><label>{novo.id ? 'Nova senha (opcional)' : 'Senha inicial'}</label><input type="password" minLength="6" value={novo.senha} onChange={(e) => setNovo({ ...novo, senha: e.target.value })} required={!novo.id} placeholder={novo.id ? 'Deixe em branco para manter' : ''} disabled={submitting} /></div>
           <div className="field"><label>Função / Papel</label><select value={novo.papel} onChange={(e) => setNovo({ ...novo, papel: e.target.value })} disabled={submitting}><option>Administrador</option><option>Gerente</option><option>Atendente</option><option>Cozinha</option></select></div>
         </div>
-        {novo.id && <div className="muted" style={{ marginTop: 8 }}>Altere apenas os dados que precisam ser atualizados. A senha é opcional.</div>}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}><input type="checkbox" checked={novo.podeCriarUsuarios} onChange={e => setNovo({ ...novo, podeCriarUsuarios: e.target.checked })} disabled={submitting || !podeCriar} /> <span><strong>Pode criar outros usuários</strong><br/><small className="muted">Somente administradores podem conceder esta permissão.</small></span></label>{novo.id && <div className="muted" style={{ marginTop: 8 }}>Altere apenas os dados que precisam ser atualizados. A senha é opcional.</div>}
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}><button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Salvando...' : novo.id ? 'Salvar alterações' : 'Salvar usuário'}</button><button type="button" className="btn btn-ghost" onClick={fecharForm} disabled={submitting}>Cancelar</button></div>
       </form>}
 
