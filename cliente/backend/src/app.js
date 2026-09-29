@@ -26,9 +26,45 @@ export function createApp() {
   const app = express()
 
   app.disable('x-powered-by')
-  app.use(cors({
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(v => v.trim()) : true,
-  }))
+
+  // CORS: aceita as origens configuradas e os hosts locais usados
+  // pelos frontends em desenvolvimento. Isso também cobre o preflight
+  // (OPTIONS) das requisições que usam Authorization e
+  // X-Estabelecimento-Id.
+  const configuredOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+  const allowedOrigins = new Set([
+    ...configuredOrigins,
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+  ])
+
+  const corsOptions = {
+    origin(origin, callback) {
+      // Navegadores normalmente enviam Origin; chamadas internas/health
+      // podem não enviar.
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true)
+      }
+
+      return callback(null, false)
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Accept',
+      'Content-Type',
+      'Authorization',
+      'X-Estabelecimento-Id',
+    ],
+    optionsSuccessStatus: 204,
+  }
+
+  app.use(cors(corsOptions))
+  app.options('*', cors(corsOptions))
   app.use(express.json({ limit: '1mb' }))
   app.use(express.urlencoded({ extended: true, limit: '1mb' }))
 

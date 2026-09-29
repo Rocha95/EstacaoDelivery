@@ -11,7 +11,39 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export function createApp() {
   const app = express()
 
-  app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }))
+  // CORS: origens configuradas + hosts locais do Painel em desenvolvimento.
+  const configuredOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+  const allowedOrigins = new Set([
+    ...configuredOrigins,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ])
+
+  const corsOptions = {
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true)
+      }
+
+      return callback(null, false)
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Accept',
+      'Content-Type',
+      'Authorization',
+      'X-Estabelecimento-Id',
+    ],
+    optionsSuccessStatus: 204,
+  }
+
+  app.use(cors(corsOptions))
+  app.options('*', cors(corsOptions))
   app.use(express.json())
 
   // Fotos enviadas pelo painel ficam acessíveis em /uploads/produtos/arquivo.jpg

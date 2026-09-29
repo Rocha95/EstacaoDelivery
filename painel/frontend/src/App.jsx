@@ -20,7 +20,7 @@ import Cozinha from './pages/Cozinha'
 import Avaliacoes from './pages/Avaliacoes'
 import Estabelecimentos from './pages/Estabelecimentos'
 import Login from './pages/Login'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom'
 
 const PAGES = {
